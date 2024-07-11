@@ -6,7 +6,7 @@ import pandas as pd
 
 app = Flask(__name__)
 
-"Gola"
+"Gola como estran"
 
 # Convertir el DataFrame a un formato que JSON pueda serializar
 def serializable(obj):
