@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive ECG Visualization</title>
+    
+    <!-- Font from Google xd --> 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+    
+    <!-- Import Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Incluir noUiSlider desde CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chroma-js@2.1.0/chroma.js"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div id="content">
+        <div id="header">
+            <div id="title">
+                <h1>Interactive ECG Visualization</h1>
+                <p>ECG visualization tool for cardiologists</p>
+            </div>
+            <div id="filter-container">
+                <div class="filter" id="gender-icons">
+                    <p>Sex: </p>
+                    <i class="fa fa-users selected" data-sex="ALL" title="All"></i>
+                    <i class="fa fa-person-dress" data-sex="Mujer" title="Womens"></i>
+                    <i class="fa fa-person" data-sex="Hombre" title="Mens"></i>
+                </div>
+                
+                <div class="filter" id="slider-container">
+                    <p>Age: </p>
+                    <div id="age-slider"></div>
+                </div>
+                <div class="filter" id="button-container"></div>
+                <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+                    <input type="file" id="file-input" name="file" style="display: none;">
+                </form>
+                <button id="upload-button" class="upload-button">
+                    <i class="fa fa-upload"></i> Upload ECG
+                </button>
+            </div>
+        </div>
+        <div id="graph-zone">
+            <div id="scatter-zone">
+                <p id="noneCluster" style="display: none;">Please, select one cluster</p>
+                <div id="scatter-plot" style="display: block;"></div>
+            </div>
+            <div id="ecg-zone">
+                <div class="ecg-content" id="principal">
+                    <p class="header-content">ECG selected</p>
+                    <p id="noneECG">Please select a point to plot</p>
+                </div>
+                <div class="ecg-content" id="nearby">
+                    <p class="header-content">ECG nearby</p>
+                    <p id="noneECG">Please select a point to plot</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tooltip"></div>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <!-- <script>
+        document.getElementById('upload-button').addEventListener('click', () => {
+            document.getElementById('file-input').click();
+        });
+
+        document.getElementById('file-input').addEventListener('change', () => {
+            document.getElementById('upload-form').submit();
+        });
+    </script> -->
+</body>
+</html>

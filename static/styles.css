@@ -1,0 +1,362 @@
+/* ---------------------------------------------------------------  General Styles */
+html {
+    font-size: 16px;
+}
+
+body {
+    font-family: "DM Sans", sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #E3E3E3;
+    color:#111827;
+}
+
+p{
+    color: #4B5563;
+}
+
+#content{
+    width: calc(100% - 2.5rem);
+    height: calc(100vh - 2.5rem);
+    margin: 1rem;
+    padding: 1.2rem 1.2rem;
+    border-radius: 1.2rem;
+    background-color: white;
+    box-sizing: border-box;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#header{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+#title {
+    flex-grow: 1;
+    text-align: left;
+}
+
+#title h1, #title p {
+    margin: 0; 
+    padding: 0; 
+}
+
+#graph-zone{
+    width: 100%;
+    height: 100%;
+    margin-top: 1.2rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+/* ---------------------------------------------------------------  Filters Styles */
+#filter-container {
+    flex-grow: 2;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filter{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap:0.5rem;
+}
+
+/* --------------------------------------------------- Genders */
+#gender-icons i {
+    cursor: pointer;
+    margin: 0.3rem;
+    color: #E4E4E5; 
+    font-size: 1.5rem;
+}
+
+#gender-icons i.selected {
+    color: #03305A;  
+}
+
+#gender-icons i:hover {
+    color:  #00597D;  
+}
+
+/* --------------------------------------------------- Age Range */
+#slider-container {
+    flex-grow: 1;
+}
+
+#age-slider{
+    font-size: 0.6rem;
+    flex-grow: 1;
+    margin: 0 1rem;
+}
+
+.noUi-connect{
+    background-color: #03305A;
+}
+
+.noUi-target .noUi-handle {
+    width: 1.3rem;
+}
+
+.noUi-handle:hover{
+    cursor: pointer;
+}
+
+.noUi-value{
+    font-size: 0.5rem;
+    color: #4B5563
+}
+
+.noUi-marker {
+    background: rgb(221, 221, 221);
+    width: 1px;
+    height: 8px;
+}
+
+/* --------------------------------------------------- CLusters buttons */
+.cluster-button {
+    margin: 0 0.1rem;
+    padding: 0.6rem 1rem;
+    font-family: "DM Sans", sans-serif;
+    color: #4B5563;
+    cursor: pointer;
+    border: none;
+    border-radius: 0.4rem;
+    border-bottom: 5px solid var(--cluster-color);
+    background-color: #E9E9EA;
+    transition: background-color 0.3s;
+}
+
+.cluster-button:hover {
+    background-color: var(--cluster-color);
+    color: white;
+}
+
+.cluster-button.selected {
+    background-color: var(--cluster-color);
+    color: white;
+}
+
+/* --------------------------------------------------- Upload Button */
+
+.upload-button {
+    background-color: #03305A;
+    color: white;
+    border: none;
+    border-radius: 0.4rem;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.upload-button:hover {
+    background-color: #00597D;
+}
+
+.upload-button i {
+    margin-right: 0.5rem;
+}
+
+/* ---------------------------------------------------------------  Scatter plot*/
+#scatter-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 6; 
+    margin: 0.8rem;
+}
+
+/* --------------------------------------------------- Tooltip */
+.tooltip {
+    position: absolute;
+    text-align: left;
+    width: auto;
+    height: auto;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.7rem;
+    background: white;
+    border: 1px solid #E9E9EA;
+    border-radius: 0.5rem;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip.show {
+    opacity: 0.9;
+}
+
+/* --------------------------------------------------- Dots */
+.dot {
+    cursor: pointer;
+    transition: 0.1s;
+}
+
+.dot:hover, .dot.highlight{
+    filter: drop-shadow(0 0 15px rgb(92, 92, 92));
+    r: 0.45rem !important;
+    fill: yellow !important;
+}
+
+.dot.selected{
+    r: 0.5rem !important;
+    stroke: black;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 9px rgb(32, 32, 32));
+}
+
+.dot.nearby {
+    stroke: black;
+    stroke-width: 1px;
+}
+
+/* ---------------------------------------------------------------  Signal plot*/
+#ecg-zone{
+    flex: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100%;
+    gap: 0.9rem;
+}
+
+.ecg-content{
+    width: 100%;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 0.5rem;
+    background-color: rgb(245, 245, 245);
+    box-sizing: border-box;
+}
+
+.ecg-content.graph{
+    align-items: flex-start;
+}
+
+.header-content{
+    margin: 0;
+    width: 100%;
+    height: fit-content;
+    font-size: 0.7rem;
+    background-color: #03305A;
+    color: white;
+    border-radius: 0.5rem 0.5rem 0px 0px;
+    padding: 0.2rem 0.8rem;
+    box-sizing: border-box;
+}
+
+#nearby{
+    height: 70%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* --------------------------------------------------- ECG Signal */
+
+.ecg{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items:flex-start;
+}
+
+.ecg-info {
+    margin: 0.5rem;
+    height: fit-content;
+    width: 12%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    box-sizing: border-box;
+}
+
+.ecg-plot {
+    flex:2;
+}
+
+.ecg.highlight {
+    background-color: rgb(191, 201, 245);
+}
+
+.line{
+    fill: none;  
+    stroke: #03305A; 
+    stroke-width: 2px;
+}
+
+.line.highlight{
+    stroke: aqua;
+}
+
+.axis line {
+    stroke: #4B5563;
+    stroke-width: 1px;
+}
+
+.axis path {
+    stroke: #4B5563;
+    stroke-width: 1px;
+}
+
+.axis text {
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.6rem;
+    fill: #4B5563;
+}
+
+/* --------------------------------------------------- Informations blocks */
+.info-block{
+    font-size: 0.6rem;
+    padding: 0.5rem 0.5rem;
+    text-align: center;
+    border-radius: 0.3rem;
+    background-color: #E9E9EA;
+}
+
+.info-block p{
+    margin: 0;
+}
+
+
+
+
+
+
+
+/* #nearby-ecg-slider{
+    width: 30%;
+    font-size: 0.6rem;
+
+} */
+
+/* #slider-n{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.6rem;
+} */
+
+
