@@ -1,10 +1,20 @@
+import os
 from flask import Flask, request, jsonify, render_template
 import numpy as np
 from scipy.spatial import distance
 import json
 import pandas as pd
+from config.mongodb import mongo # Local
+
+# To load enviromental variables
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
+app.config['MONGO_URI'] = os.getenv('MONGO_URI')
+
+# Create conection
+mongo.init_app(app)
 
 # Convertir el DataFrame a un formato que JSON pueda serializar
 def serializable(obj):
