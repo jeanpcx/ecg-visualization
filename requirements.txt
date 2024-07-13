@@ -3,3 +3,5 @@ numpy
 scipy
 pandas
 gunicorn
+flask-pymongo
+python-dotenv
