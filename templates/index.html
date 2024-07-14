@@ -54,20 +54,48 @@
                 <div id="scatter-plot" style="display: block;"></div>
             </div>
             <div id="ecg-zone">
-                <div class="ecg-content" id="principal">
-                    <p class="header-content">ECG selected</p>
-                    <p id="noneECG">Please select a point to plot</p>
-                </div>
-                <div class="ecg-content" id="nearby">
-                    <p class="header-content">ECG nearby</p>
-                    <p id="noneECG">Please select a point to plot</p>
+                <div class="ecg-content" id="nearby0"></div>
+                <div class="nearby">
+                    <div class="ecg-content" id="nearby3"></div>
+                    <div class="ecg-content" id="nearby1"></div>
+                    <div class="ecg-content" id="nearby2"></div>
                 </div>
             </div>
         </div>
     </div>
     <div class="tooltip"></div>
+    <div class="modal" style="display: none;">
+        <div id="form-container">
+            <h1>Upload ECG</h1>
+            <form id="ecgForm" method="post" action="/upload" enctype="multipart/form-data">
+                <div id="upload-op">
+                    <label for="sex">Sex</label>
+                    <div id="sex-icons">
+                        <i class="fa fa-person-dress selected" data-sex="Mujer" title="Womens"></i>
+                        <i class="fa fa-person" data-sex="Hombre" title="Mens"></i>
+                    </div>
+                    <input type="hidden" id="sex" name="sex"><br><br>
+                    <label for="age">Age</label>
+                    <input type="number" id="age" name="age" min="1" step="1" value="24"><br><br>
+                </div>
+                <!-- <input type="file" id="csv" name="csv" accept=".csv"><br><br> -->
+                <input type="file" id="csv" name="csv" accept=".csv">
+                <label for="csv" class="custom-file-upload">
+                    Choose your file
+                </label>
+                <span id="file-name"></span>
+                <input class="upload-button" type="submit" value="Submit">
+            </form>
+        </div>
+    </div>
+    <!-- <div class="warning" style="display: flex;">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        <p>Ojo! Haciendo Tarea</p>
+    </div> -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='upload.js') }}"></script>
+
     <!-- <script>
         document.getElementById('upload-button').addEventListener('click', () => {
             document.getElementById('file-input').click();

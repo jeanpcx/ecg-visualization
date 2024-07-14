@@ -1,7 +1,12 @@
 Flask
-numpy
+numpy==1.26.4
 scipy
 pandas
 gunicorn
-flask-pymongo
-python-dotenv
+# psycopg2-binary
+Flask-SQLAlchemy
+torch
+joblib
+scikit-learn
+umap-learn
+flask-socketio

@@ -14,6 +14,7 @@ body {
     color:#111827;
 }
 
+
 p{
     color: #4B5563;
 }
@@ -78,18 +79,18 @@ p{
 }
 
 /* --------------------------------------------------- Genders */
-#gender-icons i {
+#gender-icons i, #sex-icons i {
     cursor: pointer;
     margin: 0.3rem;
     color: #E4E4E5; 
     font-size: 1.5rem;
 }
 
-#gender-icons i.selected {
+#gender-icons i.selected, #sex-icons i.selected {
     color: #03305A;  
 }
 
-#gender-icons i:hover {
+#gender-icons i:hover, #sex-icons i:hover {
     color:  #00597D;  
 }
 
@@ -154,28 +155,36 @@ p{
 /* --------------------------------------------------- Upload Button */
 
 .upload-button {
-    background-color: #03305A;
-    color: white;
+    width: fit-content;
+    margin: 0 0.1rem;
+    padding: 0.6rem 1rem;
+    font-family: "DM Sans", sans-serif;
+    color: #4B5563;
+    cursor: pointer;
     border: none;
     border-radius: 0.4rem;
-    padding: 0.5rem 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    border-bottom: 5px solid #03305A;
+    background-color: #E9E9EA;
     transition: background-color 0.3s;
 }
 
 .upload-button:hover {
-    background-color: #00597D;
+    background-color: #03305A;
+    color: white;
 }
 
 .upload-button i {
     margin-right: 0.5rem;
 }
 
+.upload-button:active {
+    background-color: #00597D;
+    color: white;
+}
+
 /* ---------------------------------------------------------------  Scatter plot*/
 #scatter-zone {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -187,15 +196,19 @@ p{
 /* --------------------------------------------------- Tooltip */
 .tooltip {
     position: absolute;
+    top: 10px; /* Ajusta este valor según sea necesario */
+    left: 10px; /* Ajusta este valor según sea necesario */
+
     text-align: left;
     width: auto;
     height: auto;
     padding: 0.5rem 0.7rem;
     font-size: 0.7rem;
-    background: white;
-    border: 1px solid #E9E9EA;
+    background: rgb(245, 245, 245);
+    border: none;
     border-radius: 0.5rem;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    border-bottom: 5px solid var(--cluster-color);
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
     opacity: 0;
     transition: opacity 0.3s;
 }
@@ -204,26 +217,75 @@ p{
     opacity: 0.9;
 }
 
+/* --------------------------------------------------- Warning */
+.warning{
+    
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+
+    position: absolute;
+    top: 10px; /* Ajusta este valor según sea necesario */
+    left: 10px; /* Ajusta este valor según sea necesario */
+
+
+    /* text-align: left; */
+    width: auto;
+    height: auto;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.7rem;
+    background: rgb(245, 245, 245);
+    border: none;
+    border-radius: 0.5rem;
+    border-bottom: 5px solid gold;
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    opacity: 0.9;
+    transition: opacity 0.3s;
+
+}
+
+.warning.p{
+    margin: 0;
+}
+
+
+
 /* --------------------------------------------------- Dots */
 .dot {
     cursor: pointer;
-    transition: 0.1s;
+    transition: 0.2s;
 }
 
 .dot:hover, .dot.highlight{
     filter: drop-shadow(0 0 15px rgb(92, 92, 92));
     r: 0.45rem !important;
-    fill: yellow !important;
+    /* fill: yellow !important; */
 }
 
 .dot.selected{
     r: 0.5rem !important;
     stroke: black;
-    stroke-width: 2;
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 9px rgb(32, 32, 32));
+}
+
+.dot.look{
+    r: 0.4rem !important;
+    fill: green !important;
+    stroke: black;
+    stroke-width: 1.5;
     filter: drop-shadow(0 0 9px rgb(32, 32, 32));
 }
 
 .dot.nearby {
+    stroke: black;
+    stroke-width: 1px;
+}
+
+.dot.nearby1, .dot.nearby2 {
+    r: 0.4rem !important;
+    /* fill: #c505b2 !important; */
+    fill: var(--fill) !important;
     stroke: black;
     stroke-width: 1px;
 }
@@ -236,17 +298,15 @@ p{
     align-items: center;
     justify-content: flex-start;
     height: 100%;
-    gap: 0.9rem;
+    gap: 1.3rem;
 }
 
 .ecg-content{
     width: 100%;
-    flex-grow: 1;
+    /* flex-grow: 1; */
     display: flex;
     flex-direction: column;
     align-items: center;
-    border-radius: 0.5rem;
-    background-color: rgb(245, 245, 245);
     box-sizing: border-box;
 }
 
@@ -259,17 +319,21 @@ p{
     width: 100%;
     height: fit-content;
     font-size: 0.7rem;
+    box-sizing: border-box;
     background-color: #03305A;
     color: white;
     border-radius: 0.5rem 0.5rem 0px 0px;
     padding: 0.2rem 0.8rem;
-    box-sizing: border-box;
 }
 
-#nearby{
-    height: 70%;
+.nearby{
+    width: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 /* --------------------------------------------------- ECG Signal */
@@ -279,6 +343,15 @@ p{
     display: flex;
     flex-direction: row;
     align-items:flex-start;
+    padding: 1%;
+    box-sizing: border-box;
+
+    background: rgb(245, 245, 245);
+    border: none;
+    border-radius: 0.5rem;
+    border-bottom: 7px solid var(--fill);
+
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
 }
 
 .ecg-info {
@@ -335,13 +408,90 @@ p{
     background-color: #E9E9EA;
 }
 
-.info-block p{
+.ecg-info p{
+    font-size: 0.6rem;
     margin: 0;
 }
 
+.modal{
+    height: 50%;
+    position: fixed;
+    top: 50%; /* Ajusta este valor según sea necesario */
+    left: 50%; /* Ajusta este valor según sea necesario */
+    transform: translate(-50%, -50%);
+    z-index: 1000; 
 
 
+    padding: 2rem 4rem;
+    font-size: 0.7rem;
+    background: rgb(245, 245, 245, 0.95);
+    border: none;
+    border-radius: 0.9rem;
+    border-bottom: 5px solid #03305A;
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    transition: opacity 0.3s;
+}
 
+#form-container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+#upload-op{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+#age {
+    width: 20%;
+    font-family: "DM Sans", sans-serif;
+    color: #4B5563;
+    border: 1px solid #ccc;
+    border-radius: 0.3rem;
+    padding: 6px 12px;
+    background-color: white;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.modal label{
+    font-size: 1rem;
+}
+
+form{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 50%;
+    gap: 0.5rem;
+}
+
+input[type="file"] {
+    display: none;
+}
+/* Style the label as the custom button */
+.custom-file-upload {
+    width: 100%;
+    height: 100%;
+    border: 1px dashed #ccc;
+    border-radius: 0.5rem;
+    margin: 1rem;
+    margin-bottom: 0;
+    text-align: center;
+    cursor: pointer;
+    background-color: #E9E9EA;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
 
 
@@ -358,5 +508,3 @@ p{
     align-items: center;
     gap: 1.6rem;
 } */
-
-

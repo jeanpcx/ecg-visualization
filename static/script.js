@@ -1,8 +1,37 @@
 window.addEventListener('resize', resizeSVGs);
 
+var scatterZone = document.getElementById('scatter-zone');
+var scatterRect = scatterZone.getBoundingClientRect();
+
 // Define clusters names and colors
 const clusterLabels = ["NORM", "MI", "STTC", "CD", "HYP"];
 var cluster_color = ["gray", "#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#03305A"]
+const nearby_colors = ["#03305A", 'gold', 'darkorchid', 'gray']
+
+function clearLook(){
+    d3.selectAll(".dot").classed("look", false);
+    d3.selectAll("#nearby3 .ecg").remove();
+}
+
+
+// let changes = false;
+
+// // Get the button element
+// const button = d3.select("#upload-button")
+
+// // Add event listener to the button
+// document.getElementById('upload-button').addEventListener('click', () => {
+//     // Toggle the variable value
+//     changes = !changes;
+
+//     if (!changes){
+//         clearLook();
+//     }
+//     // Log the current value of the variable (for testing purposes)
+//     console.log('Variable is now:', changes);
+// });
+
+
 
 // Define global dimensions and safe zones
 const pageWidth = document.body.clientWidth;
@@ -13,7 +42,7 @@ const container = document.getElementById('scatter-zone');
 var width = container.clientWidth;
 var height = container.clientHeight;
 const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-const margin_signal = { top: 10, right: 15, bottom: 25, left: 25 };
+const margin_signal = { top: 10, right: 15, bottom: 25, left: 40 };
 var graphWidth = width - margin.left - margin.right;
 var graphHeight = height - margin.top - margin.bottom;
 
@@ -110,10 +139,15 @@ const y = d3.scaleLinear().range([graphHeight, 0]);
 function clearECGDisplays() {
     d3.selectAll(".ecg").remove();
     d3.selectAll(".ecg-content").classed("graph", false);
-    d3.selectAll("#noneECG").style("display", 'block');
-    d3.selectAll(".dot").classed("nearby", false);
+    // d3.selectAll("#noneECG").style("display", 'block');
+    d3.selectAll(".dot").classed("nearby1", false);
+    d3.selectAll(".dot").classed("nearby2", false);
+    // d3.selectAll(".dot").classed("look", false);
+    // button.property("disabled", true).classed("disabled", true);
+    // changes = false;
 
 }
+
 
 // Function to create age slider
 function create_sliders(min_age, max_age){
@@ -164,6 +198,12 @@ function create_buttons(clusters){
     });
 }
 
+function create_form(){
+    const formContainer = d3.select("#form-container");
+
+
+}
+
 // Function to get parameters amd filter data
 function get_filter(data){
     var sex = d3.select(".fa.selected").attr("data-sex");
@@ -193,14 +233,15 @@ function get_filter(data){
 }
 
 // Function to manage tooltip state
-function show_tooltip(event, d, state = true){
+function show_tooltip(d, state = true){
     if (state) {
-        var tooltipX = event.pageX;
-        var tooltipY = event.pageY;
+        // var tooltipX = event.pageX;
+        // var tooltipY = event.pageY;
         tooltip.classed("show", true)
-            .html(d.id + "<br/><strong style='color:" + cluster_color[d.cluster] + "'>" + clusterLabels[d.cluster] + "</strong><br/>Age: " + d.age + " years <br/>Sex: " + (d.sex === "Hombre" ? "Men" : "Women"))
-            .style("left", (tooltipX < centerX ? tooltipX + 10 : tooltipX - 95) + "px")
-            .style("top", (tooltipY < centerY ? tooltipY + 10 : tooltipY - 60) + "px");
+            .html(d._id + "<br/><strong style='color:" + cluster_color[d.cluster] + "'>" + clusterLabels[d.cluster] + "</strong><br/>" + d.age + " years <br/>" + (d.sex === "Hombre" ? "Men" : "Women"))
+            .style("left", scatterRect.left + "px")
+            .style("top", scatterRect.top + "px")
+            .style("--cluster-color", cluster_color[d.cluster]);
     }else{
         tooltip.classed("show", false);
     }
@@ -226,22 +267,26 @@ function smooth_signal(data, windowSize) {
 let x_signal = d3.scaleLinear().domain([0, 1000]);
 let y_signal = d3.scaleLinear().domain([-1, 1]);
 
-function draw_signal(d, signal, container_id){
-    const container = d3.select(container_id);
+function draw_signal(d, signal, container_id=0){
+    const container = d3.select("#nearby"+container_id);
     container.classed('graph', true);
 
-    const signal_zone = container.append("div").attr("class", "ecg").attr("id", "ecg-" + d.id);
-    const signal_info = signal_zone.append("div").attr("class", "ecg-info");
+    const signal_zone = container.append("div").attr("class", "ecg").attr("id", "ecg-" + d._id);
     const signal_plot = signal_zone.append("div").attr("class", "ecg-plot");
+    const signal_info = signal_zone.append("div").attr("class", "ecg-info");
 
-    signal_zone.on("mouseover", function () {
-        d3.select("#dot-" + d.id).classed("highlight", true);
-    }).on("mouseout", function () {
-        d3.select("#dot-" + d.id).classed("highlight", false);
-    });
+    colorNearby = (container_id == 0) ? cluster_color[d.cluster] : nearby_colors[container_id];
+    signal_zone.style("--fill", colorNearby)
+
+    // signal_zone.on("mouseover", function () {
+    //     d3.select("#dot-" + d._id).classed("highlight", true);
+    // }).on("mouseout", function () {
+    //     d3.select("#dot-" + d._id).classed("highlight", false);
+    // });
 
     // Show MetaData
     // signal_info.append("div").attr("class", "info-block").html(`<p>${d.id}</p>`);
+
     signal_info.append("div").attr("class", "info-block")
         .html(`<p style="color:white;">${d.label}</p>`)
         .style("background-color", cluster_color[d.cluster])
@@ -252,7 +297,7 @@ function draw_signal(d, signal, container_id){
     // Get local dimensions
     const plot = document.getElementsByClassName('ecg-plot')[0];
     var width_signal = plot.clientWidth;
-    var height_signal = 150;
+    var height_signal = 120;
 
     var graphWidth_signal = width_signal - margin_signal.left - margin_signal.right;
     var graphHeight_signal = height_signal - margin_signal.top - margin_signal.bottom;
@@ -266,12 +311,12 @@ function draw_signal(d, signal, container_id){
 
     // Define clip path
     svg.append("defs").append("clipPath")
-        .attr("id", "clip-" + d.id)
+        .attr("id", "clip-" + d._id)
         .append("rect")
         .attr("width", graphWidth_signal)
         .attr("height", height_signal);
 
-    const g = svg.append("g").attr("clip-path", "url(#clip-" + d.id + ")");
+    const g = svg.append("g").attr("clip-path", "url(#clip-" + d._id + ")");
 
     svg.append("rect")
         .attr("width", graphWidth_signal)
@@ -324,18 +369,18 @@ function draw_signal(d, signal, container_id){
     }
 }
 
+let clickTimer;
 // Function to get signal from data, and graph
 function show_signal(d, data, principal=true) {
-    d3.selectAll("#noneECG").style("display", "none");
-    let ids = data.map(d => d.id)
+    // d3.selectAll("#noneECG").style("display", "none");
+    let ids = data.map(d => d._id)
 
     fetch('/get_signal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json'},
         body: JSON.stringify({
-            id: d.id,
+            id: d._id,
             ids: ids,
-            n: 2
         }),
     })
         .then(response => response.json())
@@ -343,18 +388,23 @@ function show_signal(d, data, principal=true) {
             const { ids: signal_id, signals: signals } = result;
 
             if (principal){
-                d3.selectAll("#principal .ecg").remove();
-                draw_signal(d, signals[0], '#principal');
+                d3.selectAll("#nearby0 .ecg").remove();
+                draw_signal(d, signals[0]);
             }
 
-            d3.selectAll(".dot").classed("nearby", false);
             if (signals.length > 1){
-                d3.selectAll("#nearby .ecg").remove();
+                d3.selectAll(".dot").classed("nearby1", false);
+                d3.selectAll(".dot").classed("nearby2", false);
+                d3.selectAll("#nearby1 .ecg").remove();
+                d3.selectAll("#nearby2 .ecg").remove();
+
                 for (let i = 1; i < signals.length; i++) {
                     id = signal_id[i]
-                    d3.select("#dot-" + id).classed("nearby", true);
-                    d = data.find(record => record.id === id);
-                    draw_signal(d, signals[i], '#nearby');
+                    
+                    d3.select("#dot-" + id).classed("nearby"+i, true)
+                    .style("--fill", nearby_colors[i]);
+                    d = data.find(record => record._id === id);
+                    draw_signal(d, signals[i], i);
                 }
             }
         })
@@ -363,11 +413,33 @@ function show_signal(d, data, principal=true) {
         });
 }
 
-function update(data) {
+
+
+function look(d){
+    fetch('/get_look', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            id: d._id,
+        }),
+    })
+        .then(response => response.json())
+        .then(result => {
+            d3.selectAll("#nearby3 .ecg").remove();
+            draw_signal(d, result, 3);
+        })
+        .catch((error) => {
+            console.log('Error:', error);
+        });
+}
+
+
+function update(data, data_new) {
     let filtered_data = get_filter(data);
 
      // Check if any cluster is selected
     if (filtered_data.length === 0) {
+        console.log("No hay nada")
         clearECGDisplays();
         svg.selectAll(".dot").remove();
         d3.select("#noneCluster").style("display", "block");
@@ -381,7 +453,7 @@ function update(data) {
     // Check if selected point is still in filtered data
     const selected_dot = d3.select(".dot.selected").data()[0];
     if (selected_dot) {
-        const still = filtered_data.some(d => d.id === selected_dot.id);
+        const still = filtered_data.some(d => d._id === selected_dot._id);
         if (still) {
             show_signal(selected_dot, filtered_data, false)
         } else {
@@ -389,7 +461,7 @@ function update(data) {
         }
     }
 
-    const dots = svg.selectAll(".dot").data(filtered_data, d => d.id);
+    const dots = svg.selectAll(".dot").data(filtered_data, d => d._id);
     dots.exit().remove();
     dots.attr("cx", d => x(d.x))
         .attr("cy", d => y(d.y))
@@ -401,22 +473,57 @@ function update(data) {
         .attr("r", 3)
         .attr("cx", d => x(d.x))
         .attr("cy", d => y(d.y))
-        .attr("id", d => "dot-" + d.id)
+        .attr("id", d => "dot-" + d._id)
         .style("fill", d => cluster_color[d.cluster])
         .on("mouseover", function (event, d) {
-            show_tooltip(event, d);
-            d3.select("#ecg-" + d.id).select('.line').classed("highlight", true);  
+            show_tooltip(d);
+            // d3.select("#ecg-" + d._id).select('.line').classed("highlight", true);  
         })
         .on("mouseout", function (event, d) {
-            show_tooltip(null, null, false);
-            d3.select("#ecg-" + d.id).select('.line').classed("highlight", false);
+            show_tooltip(null, false);
+            // d3.select("#ecg-" + d._id).select('.line').classed("highlight", false);
+        })
+        .on("click", function (event, d) {
+            // if (!changes){
+                d3.selectAll(".dot.selected").classed("selected", false);
+                d3.select(this).classed("selected", true);
+                let filtered_data = get_filter(data);
+                show_signal(d, filtered_data);
+                // button.property("disabled", false).classed("disabled", false);
+                // zoomToPoint(d);
+            // }else{
+            //     d3.selectAll(".dot.look").classed("look", false);
+            //     d3.select(this).classed("look", true);
+            //     console.log('Empezando a cambiar todo');
+            //     look(d);
+            // }
+        });
+
+    // Add new points from data_new with gray color
+    const newDots = svg.selectAll(".new-dot").data(data_new, d => d._id);
+    newDots.exit().remove();
+    newDots.attr("cx", d => x(d.x))
+        .attr("cy", d => y(d.y))
+        .style("fill", "lime");
+
+    newDots.enter().append("circle")
+        .attr("class", "new-dot dot")
+        .attr("r", 3)
+        .attr("cx", d => x(d.x))
+        .attr("cy", d => y(d.y))
+        .attr("id", d => "new-dot-" + d._id)
+        .style("fill", "lime")
+        .on("mouseover", function (event, d) {
+            show_tooltip(d);
+        })
+        .on("mouseout", function (event, d) {
+            show_tooltip(null, false);
         })
         .on("click", function (event, d) {
             d3.selectAll(".dot.selected").classed("selected", false);
             d3.select(this).classed("selected", true);
             let filtered_data = get_filter(data);
             show_signal(d, filtered_data);
-            // zoomToPoint(d);
         });
     applyZoomTransform(currentZoomState);
 }
@@ -425,8 +532,12 @@ function update(data) {
 // Load Data from API
 fetch('/get_data')
     .then(response => response.json())
-    .then(data => {
+    .then(result => {
 
+        const data = result.filter(row => row.cluster !== null && row.cluster !== undefined && row.cluster !== '');
+        const data_new = result.filter(row => row.cluster === null || row.cluster === undefined || row.cluster === '');
+        
+        console.log(data_new.length)
         // Get global parameters: min age, max age, clusters.
         const min_age = d3.min(data, d => d.age);
         const max_age = d3.max(data, d => d.age);
@@ -441,7 +552,7 @@ fetch('/get_data')
         y.domain(d3.extent(data, d => d.y));
 
         // Show and update
-        update(data);
+        update(data, data_new);
 
         // Check changes in filters
         d3.selectAll(".cluster-button").on("click", function () {
@@ -470,17 +581,17 @@ fetch('/get_data')
                     d3.select('.cluster-button[data-cluster="5"]').classed("selected", true);
                 }
             }
-            update(data);
+            update(data, data_new);
         });
 
         d3.selectAll("#gender-icons i").on("click", function () {
             d3.selectAll("#gender-icons i").classed("selected", false);
             d3.select(this).classed("selected", true);
-            update(data);
+            update(data, data_new);
         });
 
         age_slider.noUiSlider.on('update', function (values, handle) {
-            update(data);
+            update(data, data_new);
             const selected_dot = d3.select(".dot.selected").data()[0];
             if(!selected_dot){
                 clearECGDisplays();
