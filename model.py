@@ -8,8 +8,8 @@ import umap
 
 # Cargar los objetos StandardScaler y UMAP
 print('Loading tools..')
-scaler_loaded = joblib.load('scaler.pkl')
-reducer_loaded = joblib.load('umap_reducer.pkl')
+scaler_loaded = joblib.load('data/scaler.pkl')
+reducer_loaded = joblib.load('data/umap_reducer.pkl')
 print('Loaded! tools..')
 
 
@@ -145,7 +145,7 @@ def load_model():
     model = CNN(num_classes = 5, hid_size = 128)
     # model.load_state_dict(torch.load('model_50.pth'))
     # model.load_state_dict()
-    model = torch.load('model_50.pth', map_location='cpu')
+    model = torch.load('data/model_50.pth', map_location='cpu')
     model.avgpool.register_forward_hook(get_activation('avgpool')) 
     model.eval()
     return model
