@@ -8,8 +8,8 @@ import joblib
 
 # Cargar los objetos StandardScaler y UMAP
 print('Loading tools..')
-scaler_loaded = joblib.load('data/scaler.pkl')
-reducer_loaded = joblib.load('data/umap_reducer.pkl')
+scaler = joblib.load('data/scaler.pkl')
+reducer = joblib.load('data/reducer.pkl')
 print('Loaded! tools..')
 
 
@@ -128,9 +128,9 @@ class CNN(nn.Module):
     x = self.avgpool(x)
     x = x.view(-1, x.size(1) * x.size(2))
     x = self.dropout(x)
-    # x = self.fc(x)
+    x = self.fc(x)
     #x = torch.sigmoid(self.fc(x))
-    x = F.softmax(self.fc(x), dim=1) #Cross Entropy lo hace automáticamente.
+    # x = F.softmax(self.fc(x), dim=1) #Cross Entropy lo hace automáticamente.
     return x
 
 # model = CNN(num_classes = num_classes, hid_size = 128)
@@ -153,9 +153,12 @@ def load_model():
 def loader_data(df):
   df = df.astype(np.float64)
   df = df.to_numpy()
+  df = scaler.transform(df)
+  signal = df[:, 0].tolist()
+
   x = df.T.reshape(1, 12, 1000)
   x = torch.tensor(x).float()
-  return x
+  return x, signal
 
 def get_embedding(x):
   model = load_model()
@@ -168,18 +171,8 @@ def get_embedding(x):
   return result, prediction
 
 def get_umap(embedding):
-  # Verificar el embedding de entrada
-  print("Embedding de entrada:", embedding)
-  
-  # Normalizar el nuevo punto usando el scaler cargado
-  new_point_normalized = scaler_loaded.transform([embedding])
-  
-  # Verificar el punto normalizado
-  print("Punto normalizado:", new_point_normalized)
-  
   # Transformar usando el reducer cargado
-  point = reducer_loaded.transform(new_point_normalized)
-  
+  point = reducer.transform([embedding])
   # Verificar el punto UMAP
   print("Punto UMAP:", point)
   

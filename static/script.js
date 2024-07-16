@@ -216,10 +216,20 @@ function get_filter(data){
 // Function to manage tooltip state
 function show_tooltip(d, state = true){
     if (state) {
+
+        if (d.cluster === null) {
+            var label = "Pred: " + clusterLabels[d.pred];
+            var color = cluster_color[d.pred]
+        } else {
+            var label = clusterLabels[d.cluster];    
+            var color = cluster_color[d.cluster]
+
+        }
+
         // var tooltipX = event.pageX;
         // var tooltipY = event.pageY;
         tooltip.classed("show", true)
-            .html(d._id + "<br/><strong style='color:" + cluster_color[d.cluster] + "'>" + clusterLabels[d.cluster] + "</strong><br/>" + d.age + " years <br/>" + (d.sex === "Hombre" ? "Men" : "Women"))
+            .html(d._id + "<br/><strong style='color:" + color + "'>" + label + "</strong><br/>" + d.age + " years <br/>" + (d.sex === "Hombre" ? "Men" : "Women"))
             .style("left", scatterRect.left + "px")
             .style("top", scatterRect.top + "px")
             .style("--cluster-color", cluster_color[d.cluster]);
@@ -259,19 +269,19 @@ function draw_signal(d, signal, container_id=0){
     colorNearby = (container_id == 0) ? cluster_color[d.cluster] : nearby_colors[container_id];
     signal_zone.style("--fill", colorNearby)
 
-    // signal_zone.on("mouseover", function () {
-    //     d3.select("#dot-" + d._id).classed("highlight", true);
-    // }).on("mouseout", function () {
-    //     d3.select("#dot-" + d._id).classed("highlight", false);
-    // });
-
-    // Show MetaData
-    // signal_info.append("div").attr("class", "info-block").html(`<p>${d.id}</p>`);
-
-    signal_info.append("div").attr("class", "info-block")
+    if (d.cluster === null) {
+        console.log('d.cluster es undefined');
+        signal_info.append("div").attr("class", "info-block")
+        .html(`<p style="color:white;">Pred: ${clusterLabels[d.pred]}</p>`)
+        .style("background-color", cluster_color[0])
+        .style("color", "white");
+    } else {
+        signal_info.append("div").attr("class", "info-block")
         .html(`<p style="color:white;">${d.label}</p>`)
         .style("background-color", cluster_color[d.cluster])
         .style("color", "white");
+    }
+
     signal_info.append("div").attr("class", "info-block").html(`<p>${(d.sex === "Hombre" ? "Men" : "Women")}</p>`);
     signal_info.append("div").attr("class", "info-block").html(`<p>${d.age} years</p>`);
 
@@ -365,8 +375,6 @@ function show_signal(d, filter, renderSelected = true) {
         .then(result => {
             const {nearbyIDs: nearbyIDs, selectedIds: selectedIds, signal: signals} = result;
             var ids = nearbyIDs
-
-            console.log(result)
 
             if (renderSelected){
                 d3.selectAll("#nearby0 .ecg").remove();
@@ -608,12 +616,12 @@ function fetchDataAndInitialize() {
                 update(data, data_new);
             });
 
-            ageSlider.noUiSlider.on('update', function (values, handle) {
+            ageSlider.noUiSlider.on('set', function (values, handle) {
                 update(data, data_new);
-                const selected_dot = d3.select(".dot.selected").data()[0];
-                if (!selected_dot) {
-                    clearECGDisplays();
-                }
+                // const selected_dot = d3.select(".dot.selected").data()[0];
+                // if (!selected_dot) {
+                //     clearECGDisplays();
+                // }
             });
 
             

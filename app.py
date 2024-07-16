@@ -1,33 +1,10 @@
-# import os
-# from flask import Flask, request, jsonify, render_template, redirect, url_for
-
-# from bson import json_util
-# import numpy as np
-# from scipy.spatial import distance
-# import json
-# import pandas as pd
-# # import torch
-
-# from model import *
-
-# # from flask_socketio import SocketIO, emit
-
-# from flask import Flask, jsonify
-# from flask_sqlalchemy import SQLAlchemy
-# from sqlalchemy import func, text, desc
-# from sqlalchemy import create_engine, Sequence, Column, Float, String, Integer, JSON
-# import os
-
 import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 import numpy as np
-# from scipy.spatial import distance
 import pandas as pd
 from model import *
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float, String, Integer, JSON
-
-
 
 app = Flask(__name__)
 
@@ -60,8 +37,6 @@ class Meta(db.Model):
     y = Column(Float, nullable=True)
     cluster = Column(Integer, nullable=True)
     label = Column(String(10), nullable=True)
-    near_1 = Column(Integer, nullable=True)
-    near_2 = Column(Integer, nullable=True)
     selected_1 = Column(Integer, nullable=True)
     selected_2 = Column(Integer, nullable=True)
 
@@ -197,23 +172,21 @@ def upload_file():
 
     # Read the CSV file into a pandas DataFrame
     df = pd.read_csv(file)
-    x = loader_data(df) # Transform df to send to model
+    x, signal = loader_data(df) # Transform df to send to model, algo get the signal
     embedding, prediction = get_embedding(x) # Evaluate in model
     umap = get_umap(embedding)
 
     # Transform embedding into listo, to upload as JSON
     if isinstance(embedding, np.ndarray):
         embedding = embedding.tolist()
-    # Get signal
-    signal = df.iloc[:, 0].tolist()
 
     # Create documents
     new_signal = Signal(signal = signal, embedding = embedding)
-    new_data = Meta(age = age, sex = sex, pred = int(prediction), x = float(umap.iloc[0][0]), y = float(umap.iloc[0][1]))
+    new_data = Meta(age = age, sex = sex, pred = int(prediction), x = float(umap[0][0]), y = float(umap[0][1]))
     
     db.session.add(new_signal)
     db.session.add(new_data)
-    # db.session.commit() # Send and update database
+    db.session.commit() # Send and update database
 
     # Reload embeddings with updated
     load_embeddings()
