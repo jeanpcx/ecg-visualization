@@ -4,7 +4,8 @@ numpy==1.26.4
 pandas
 gunicorn
 Flask-SQLAlchemy
-torch
+# torch
+torch==2.3.1+cpu
 joblib
 scikit-learn
 umap-learn
