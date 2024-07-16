@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pandas as pd
+# import pandas as pd
 import numpy as np
 import joblib
-import umap
+# import umap
 
 # Cargar los objetos StandardScaler y UMAP
 print('Loading tools..')
@@ -142,52 +142,48 @@ def get_activation(name):
   return hook
 
 def load_model():
-    model = CNN(num_classes = 5, hid_size = 128)
-    # model.load_state_dict(torch.load('model_50.pth'))
-    # model.load_state_dict()
-    model = torch.load('data/model_50.pth', map_location='cpu')
-    model.avgpool.register_forward_hook(get_activation('avgpool')) 
-    model.eval()
-    return model
+  model = CNN(num_classes = 5, hid_size = 128)
+  # model.load_state_dict(torch.load('model_50.pth'))
+  # model.load_state_dict()
+  model = torch.load('data/model_50.pth', map_location='cpu')
+  model.avgpool.register_forward_hook(get_activation('avgpool')) 
+  model.eval()
+  return model
 
 def loader_data(df):
-    df = df.astype(np.float64)
-    df = df.to_numpy()
-    x = df.T.reshape(1, 12, 1000)
-    x = torch.tensor(x).float()
-    return x
+  df = df.astype(np.float64)
+  df = df.to_numpy()
+  x = df.T.reshape(1, 12, 1000)
+  x = torch.tensor(x).float()
+  return x
 
 def get_embedding(x):
-    model = load_model()
-    with torch.no_grad():
-        # print(f"Tamaño de x: {x.shape}")
-        yhat = model(x)
-        # print(f"Salida del modelo: {yhat}")
+  model = load_model()
+  with torch.no_grad():
+    yhat = model(x)
+    prediction = (torch.argmax(yhat, dim=1)).cpu().numpy()[0]
+    embeddings = activation['avgpool'].cpu().numpy()
+  result = np.squeeze(embeddings)
 
-        prediction = (torch.argmax(yhat, dim=1)).cpu().numpy()[0]
-        embeddings = activation['avgpool'].cpu().numpy()
-    result = np.squeeze(embeddings)
-
-    return result, prediction
+  return result, prediction
 
 def get_umap(embedding):
-    # Verificar el embedding de entrada
-    print("Embedding de entrada:", embedding)
-    
-    # Normalizar el nuevo punto usando el scaler cargado
-    new_point_normalized = scaler_loaded.transform([embedding])
-    
-    # Verificar el punto normalizado
-    print("Punto normalizado:", new_point_normalized)
-    
-    # Transformar usando el reducer cargado
-    point = reducer_loaded.transform(new_point_normalized)
-    
-    # Verificar el punto UMAP
-    print("Punto UMAP:", point)
-    
-    point = pd.DataFrame(point)
-    return point
+  # Verificar el embedding de entrada
+  print("Embedding de entrada:", embedding)
+  
+  # Normalizar el nuevo punto usando el scaler cargado
+  new_point_normalized = scaler_loaded.transform([embedding])
+  
+  # Verificar el punto normalizado
+  print("Punto normalizado:", new_point_normalized)
+  
+  # Transformar usando el reducer cargado
+  point = reducer_loaded.transform(new_point_normalized)
+  
+  # Verificar el punto UMAP
+  print("Punto UMAP:", point)
+  
+  return point
 
 # # Prueba de la función con diferentes embeddings
 # embedding1 = [0.1] * 32  # Reemplaza con tus valores reales

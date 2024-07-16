@@ -1,22 +1,32 @@
+# import os
+# from flask import Flask, request, jsonify, render_template, redirect, url_for
+
+# from bson import json_util
+# import numpy as np
+# from scipy.spatial import distance
+# import json
+# import pandas as pd
+# # import torch
+
+# from model import *
+
+# # from flask_socketio import SocketIO, emit
+
+# from flask import Flask, jsonify
+# from flask_sqlalchemy import SQLAlchemy
+# from sqlalchemy import func, text, desc
+# from sqlalchemy import create_engine, Sequence, Column, Float, String, Integer, JSON
+# import os
+
 import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
-
-from bson import json_util
 import numpy as np
 from scipy.spatial import distance
-import json
 import pandas as pd
-# import torch
-
 from model import *
-
-# from flask_socketio import SocketIO, emit
-
-from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func, text, desc
-from sqlalchemy import create_engine, Sequence, Column, Float, String, Integer, JSON
-import os
+from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float, String, Integer, JSON
+
 
 
 app = Flask(__name__)
