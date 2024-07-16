@@ -8,10 +8,6 @@ from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float,
 
 app = Flask(__name__)
 
-DATABASE_URL = os.environ.get('DATABASE_URL', 'postgres://uesm16qpp36267:p71df9743039f4f983238a5f5be1678ed16374aa713a8cf8beafe9ba8c4bdc46e@cb5ajfjosdpmil.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d6629s16654mbt')
-if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
