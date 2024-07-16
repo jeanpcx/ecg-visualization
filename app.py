@@ -7,7 +7,10 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float, String, Integer, JSON
 
 app = Flask(__name__)
-DATABASE_URL = os.getenv('DATABASE_URL')
+# DATABASE_URL = os.getenv('DATABASE_URL')
+
+DATABASE_URL = 'postgresql://postgres:CXJNCPIJGrjaxxKnyLrIVbwOzBPazpQF@roundhouse.proxy.rlwy.net:13721/railway'
+
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -21,6 +24,9 @@ def load_embeddings():
     with app.app_context():
         all_embeddings = db.session.query(Signal._id, Signal.embedding).all()
         embeddings_dict = {e._id: np.array(e.embedding) for e in all_embeddings}
+
+# Load Embeddings
+load_embeddings()
 
 # Define the model for META table
 class Meta(db.Model):
@@ -212,5 +218,4 @@ def update_nearby():
         return jsonify({'message': 'Record not found'}), 404
 
 if __name__ == '__main__':
-    load_embeddings()
     app.run(debug=True)
