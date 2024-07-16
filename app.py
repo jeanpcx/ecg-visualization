@@ -23,9 +23,6 @@ def load_embeddings():
         all_embeddings = db.session.query(Signal._id, Signal.embedding).all()
         embeddings_dict = {e._id: np.array(e.embedding) for e in all_embeddings}
 
-# Load Embeddings
-load_embeddings()
-
 # Define the model for META table
 class Meta(db.Model):
     __tablename__ = 'meta'
@@ -215,5 +212,7 @@ def update_nearby():
     else:
         return jsonify({'message': 'Record not found'}), 404
 
+# PRELoad Embeddings
+load_embeddings()
 if __name__ == '__main__':
     app.run(debug=True)
