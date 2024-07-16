@@ -5,3 +5,4 @@ create_table.py
 prueba.py
 request.http
 /varios
+/__pycache__
