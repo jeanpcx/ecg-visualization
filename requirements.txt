@@ -9,4 +9,4 @@ torch
 joblib
 scikit-learn
 umap-learn
-flask-socketio
+# flask-socketio

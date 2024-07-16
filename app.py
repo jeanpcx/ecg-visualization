@@ -6,15 +6,14 @@ import numpy as np
 from scipy.spatial import distance
 import json
 import pandas as pd
-import torch
+# import torch
 
 from model import *
 
-from flask_socketio import SocketIO, emit
+# from flask_socketio import SocketIO, emit
 
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
-# from flask_migrate import Migrate
 from sqlalchemy import func, text, desc
 from sqlalchemy import create_engine, Sequence, Column, Float, String, Integer, JSON
 import os
@@ -89,236 +88,150 @@ def get_data():
     #     item.pop('_sa_instance_state', None)  # Eliminar el estado interno de SQLAlchemy si está presente
     # return jsonify(json_result)
 
-@app.route('/get_signal', methods=['POST'])
-def get_nearby():
-    content = request.json
-    id = content['id']
-    ids = content['ids']
-    n = 2
+def get_nearby(id, filter_ids, n = 2):
+    # Use the embeddings pre-load
     global embeddings_dict
 
-    # Obtener el embedding objetivo
-    target_embedding = embeddings_dict[id]
-    
-    # Filtrar los embeddings necesarios
-    embeddings = {key: embeddings_dict[key] for key in ids if key != id}
-    
-    # Convertir los valores del diccionario a un array de NumPy para operaciones vectorizadas
-    embedding_ids = np.array(list(embeddings.keys()))
+    # Get the target embedding
+    target = embeddings_dict[id]
+
+    # Keep only filter points
+    embeddings = {key: embeddings_dict[key] for key in filter_ids if key != id}
+
+    # Find 2 nearby embeddings
+    embedding_ids = np.array(list(embeddings.keys())) # Vectorized operations
     embedding_values = np.array(list(embeddings.values()))
-    
-    # Calcular las distancias usando operaciones vectorizadas
-    dists = np.linalg.norm(embedding_values - target_embedding, axis=1)
-    
-    # Obtener los índices de los n embeddings más cercanos
-    closest_indices = np.argsort(dists)[:n]
+    dists = np.linalg.norm(embedding_values - target, axis = 1)
+    closest_indices = np.argpartition(dists, 2)[:n]
     closest_ids = embedding_ids[closest_indices].tolist()
 
-    # Incluir el objetivo mismo como el primer elemento
-    closest_ids.insert(0, id)
+    return closest_ids
 
-    # Obtener las señales correspondientes
-    filter = db.session.query(Signal._id, Signal.signal).filter(Signal._id.in_(closest_ids)).all()
-   
-    # Convertir las señales a una lista
-    signals_dict = {signal._id: signal.signal for signal in filter}
-    signals_list = [signals_dict[_id] for _id in closest_ids]
+def get_signal(ids):
+    if not ids:
+        return jsonify({'error': 'List of IDs is empty'})
+    
+    if isinstance(ids, (int, float)):
+        # Get single Signal
+        query = db.session.query(Signal.signal).filter(Signal._id == ids).first()
+        if query is None:
+            return jsonify({'error': 'Record not found'})
+        else:
+            result = query.signal
+    else:
+        # Get multiple Signals
+        query = db.session.query(Signal._id, Signal.signal).filter(Signal._id.in_(ids)).all()
+        if query is None:
+            return jsonify({'error': 'Records not found'})
+    
+        signals_dict = {signal._id: signal.signal for signal in query}
+        result = [signals_dict[_id] for _id in ids]
 
-    return jsonify({"ids": closest_ids, "signals": signals_list})
+    return result
 
-
-@app.route('/get_look', methods=['POST'])
-def get_look():
+@app.route('/get_signals', methods=['POST'])
+def get_signals():
     content = request.json
     id = content['id']
+    filter_ids = content['filterIds']
 
-    query = db.session.query(Signal.signal).filter(Signal._id == id).first()
-    signal = query.signal
+    # Found get nearby ids
+    nearby_ids = get_nearby(id, filter_ids)
+    nearby_ids.insert(0, id)
 
-    return jsonify(signal)
+    # Get target info
+    meta_target = db.session.query(Meta).filter(Meta._id == id).first()
+    if not meta_target:
+        return jsonify({'message': 'Record not found'}), 404
+
+    selected_ids = None
+    nearby1 = meta_target.selected_1
+    nearby2 = meta_target.selected_2
+
+    if nearby1 and nearby2:
+        # User select two points
+        selected_ids = [nearby1, nearby2]
+    elif nearby1:
+        # User select only nearby1
+        selected_ids = [nearby1, nearby_ids[2]]
+    elif nearby2:
+        # User select only nearby2
+        selected_ids = [nearby_ids[1], nearby2]
+
+    # If user select any point, so graph
+    if selected_ids:
+        selected_ids.insert(0, id)
+        signals = get_signal(selected_ids)
+    else:
+        signals = get_signal(nearby_ids)
+    
+    return jsonify({"nearbyIDs": nearby_ids, "selectedIds": selected_ids, "signal": signals})
+
+@app.route('/examine_signal', methods=['POST'])
+def examine_signal():
+    content = request.json
+    id = content['id']
+    result = get_signal(id)
+
+    return jsonify(result)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
     sex = request.form['sex']
     age = request.form['age']
     file = request.files['csv']
+
+    # Handle error when not file is uploaded
     if not file:
-        return "No file"
+        return jsonify({'message': 'No file found to upload'}), 404
 
     # Read the CSV file into a pandas DataFrame
     df = pd.read_csv(file)
-    signal = df.iloc[:, 0].tolist()
-    x = loader_data(df)
-    embedding, prediction = get_embedding(x)
+    x = loader_data(df) # Transform df to send to model
+    embedding, prediction = get_embedding(x) # Evaluate in model
     umap = get_umap(embedding)
 
+    # Transform embedding into listo, to upload as JSON
     if isinstance(embedding, np.ndarray):
         embedding = embedding.tolist()
+    # Get signal
+    signal = df.iloc[:, 0].tolist()
 
-    prediction = int(prediction)
-    umap_x = float(umap.iloc[0][0])
-    umap_y = float(umap.iloc[0][1])
-
-    new_signal = Signal(signal=signal, embedding=embedding)
-    new_data = Meta(age=age, sex=sex, pred=prediction, x=umap_x, y=umap_y)
+    # Create documents
+    new_signal = Signal(signal = signal, embedding = embedding)
+    new_data = Meta(age = age, sex = sex, pred = int(prediction), x = float(umap.iloc[0][0]), y = float(umap.iloc[0][1]))
     
     db.session.add(new_signal)
     db.session.add(new_data)
-    db.session.commit()
+    # db.session.commit() # Send and update database
 
+    # Reload embeddings with updated
     load_embeddings()
+    return jsonify({'message': 'Data uploaded successfully!'}), 200
 
-    print('Create: ',new_signal._id)
-    print('Create: ',new_data._id)
+@app.route('/update_nearby', methods=['POST'])
+def update_nearby():
+    content = request.json
+    id = content['id']
+    i = content.get('selected')
+    id_nearby = content.get('selected_id')
 
+    # Find the record
+    meta_record = db.session.query(Meta).filter(Meta._id == id).first()
+    if meta_record:
+        if id_nearby is not None:
+            if (i == "1"):
+                # Save in nearby1
+                meta_record.selected_1 = id_nearby
+            else:
+                # Save in nearby2
+                meta_record.selected_2 = id_nearby
 
-
-    # For demonstration, just return the DataFrame as HTML
-    # return umap.to_html()
-    return redirect(url_for('index'))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# @app.route('/get_signal', methods=['POST'])
-# def get_nearby():
-#     content = request.json
-#     id = content['id']
-#     ids = content['ids']
-#     n = 2
-    
-#     # Fetch embeddings for the given IDs
-#     filter = db.session.query(Signal._id, Signal.embedding).filter(Signal._id.in_(ids)).all()
-#     embeddings = {e._id: np.array(e.embedding) for e in filter}
-
-#     # Get the target embedding and remove it from the dictionary
-#     target_embedding = embeddings.pop(id)
-    
-#     # Convert dictionary values to a numpy array for vectorized operations
-#     embedding_ids = np.array(list(embeddings.keys()))
-#     embedding_values = np.array(list(embeddings.values()))
-    
-#     # Calculate distances using vectorized operations
-#     dists = np.linalg.norm(embedding_values - target_embedding, axis=1)
-    
-#     # Get the indices of the n closest embeddings
-#     closest_indices = np.argsort(dists)[:n]
-#     closest_ids = embedding_ids[closest_indices].tolist()
-
-#     # Include the target itself as the first element
-#     closest_ids.insert(0, id)
-
-#     # Get Signals
-#     filter = db.session.query(Signal._id, Signal.signal).filter(Signal._id.in_(closest_ids)).all()
-   
-#     # Convert signals to a list
-#     signals_dict = {signal._id: signal.signal for signal in filter}
-#     signals_list = [signals_dict[_id] for _id in closest_ids]
-
-#     return jsonify({"ids": closest_ids, "signals": signals_list})
-
-# @app.route('/get_signal', methods=['POST'])
-# def get_nearby():
-#     content = request.json
-#     id = content['id']
-#     ids = content['ids']
-#     n = 2
-    
-#     # Fetch embeddings for the given IDs
-#     filter = db.session.query(Signal).filter(Signal._id.in_(ids)).all()
-#     # Convert embeddings to numpy arrays
-#     embeddings = {e._id: e.embedding for e in filter}    
-#     # Get the target embedding and remove it from the dictionary
-#     target_embedding = embeddings.pop(id)
-    
-#     # Calculate distances
-#     distances = {}
-#     for _id, embedding in embeddings.items():
-#         dist = distance.euclidean(target_embedding, embedding)
-#         distances[_id] = dist
-    
-#     # Find the n closest embeddings
-#     closest_ids = sorted(distances, key=distances.get)[:n]
-#     closest_distances = {cid: distances[cid] for cid in closest_ids}
-
-#     # Include the target itself as the first element
-#     closest_ids.insert(0, id)
-#     print(closest_ids)
-
-#     # Get Signals
-#     filter = db.session.query(Signal.signal).filter(Signal._id.in_(closest_ids)).all()
-   
-#     # Convert signals to a list
-#     signals_list = [signal.signal for signal in filter]
-
-#     return jsonify({"ids": closest_ids, "signals": signals_list})
-
-
-
-
-    
-# # Cargar el modelo entrenado
-# pca = joblib.load('pca_model.pkl')
-
-
-
-
-
-# @app.route('/get_data', methods=['GET'])
-# def get_data():
-#     copy = df_data.copy()
-#     copy = copy.drop(columns=['ecg'])
-
-#     # Seleccionar solo 100 registros de cada cluster
-#     df_limited = copy.groupby('cluster').head(100).reset_index(drop=True)
-
-#     # Convertir el DataFrame filtrado a una lista de diccionarios
-#     df_json = df_limited.to_dict(orient='records')
-
-#     return jsonify(df_json)
-
-# @app.route('/get_signal', methods=['POST'])
-# def get_nearby():
-#     content = request.json
-#     id = content['id']
-#     ids = content['ids']
-#     n = content['n'] + 1
-
-#     point = df_data[df_data['id'] == id]
-#     filtered_df = df_data[df_data['id'].isin(ids)]
-#     points = filtered_df[['x', 'y']].to_numpy()
-
-#     distances = distance.cdist([point[['x', 'y']].iloc[0]], points, 'euclidean')[0]
-#     closest_indices = np.argsort(distances)[:n]
-#     closest_data_indices = filtered_df.iloc[closest_indices].index
-
-#     signals = []
-#     signal_ids = []
-    
-#     for idx in closest_data_indices:
-#         signal_ids.append(df_data.loc[idx, 'id'])
-#         signals.append(serializable(df_data.loc[idx, 'ecg']))
-
-#     return jsonify({'ids': signal_ids, 'signals': signals})
-
+        db.session.commit()
+        return jsonify({'message': 'Record updated successfully!'}), 200
+    else:
+        return jsonify({'message': 'Record not found'}), 404
 
 if __name__ == '__main__':
     load_embeddings()
-
-    # db.session.execute('SELECT setval(\'meta_id_seq\', (SELECT MAX(_id) FROM meta) + 1);')
-    # db.session.execute('SELECT setval(\'signal_id_seq\', (SELECT MAX(_id) FROM signals) + 1);')
-    # db.session.commit()
     app.run(debug=True)
