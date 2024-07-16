@@ -108,6 +108,7 @@ svg.append("rect")
     .style("fill", "none")
     .style("pointer-events", "all")
     .on("click", function () {
+        d3.selectAll('.send-to-container').classed("show", false);
         clearECGDisplays();
     });
 
@@ -493,6 +494,7 @@ function update(data, data_new) {
                 // If new point is selected: The user can inspect other signals.
                 d3.selectAll(".dot.examine").classed("examine", false);
                 d3.select(this).classed("examine", true);
+                d3.selectAll('.send-to-container').classed("show", true);
                 examine_signal(d);
             }
         });

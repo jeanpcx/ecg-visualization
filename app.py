@@ -21,7 +21,7 @@
 import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 import numpy as np
-from scipy.spatial import distance
+# from scipy.spatial import distance
 import pandas as pd
 from model import *
 from flask_sqlalchemy import SQLAlchemy
