@@ -89,7 +89,7 @@ def load_model():
   # model.load_state_dict(torch.load('model_50.pth'))
   # model.load_state_dict()
   
-  model = torch.load('data/model_50.pth', map_location='cpu')
+  model = torch.load('data/model_50.pth', map_location='cpu', pickle_module={'CNN': CNN})
   model.avgpool.register_forward_hook(get_activation('avgpool')) 
   model.eval()
   return model
