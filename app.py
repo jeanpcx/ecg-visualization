@@ -3,14 +3,17 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for
 import numpy as np
 import pandas as pd
 # from model import *
-from model import CNN, get_activation, load_model, loader_data, get_embedding, get_umap
+from model import CNN, ConvNormPool, Relu
+from model import get_activation, load_model, loader_data, get_embedding, get_umap
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float, String, Integer, JSON
 
+# from dotenv import load_dotenv
+# load_dotenv()
+
 app = Flask(__name__)
 DATABASE_URL = os.getenv('DATABASE_URL')
-# DATABASE_URL = 'postgresql://postgres:CXJNCPIJGrjaxxKnyLrIVbwOzBPazpQF@roundhouse.proxy.rlwy.net:13721/railway'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

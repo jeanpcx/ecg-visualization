@@ -90,7 +90,6 @@ class ConvNormPool(nn.Module):
     x = self.dropout(x)
     return x
 
-
 class CNN(nn.Module):
   def __init__(
     self,
@@ -145,10 +144,7 @@ def get_activation(name):
 
 def load_model():
   model = CNN(num_classes = 5, hid_size = 128)
-  # model.load_state_dict(torch.load('data/model_50_dict.pth', map_location=torch.device('cpu')))
-  # model.load_state_dict()
-  
-  model = torch.load('data/model_50.pth', map_location=torch.device('cpu'))
+  model = torch.load('data/model_50.pth', map_location='cpu')
   model.avgpool.register_forward_hook(get_activation('avgpool')) 
   model.eval()
   return model
