@@ -90,6 +90,7 @@ class ConvNormPool(nn.Module):
     x = self.dropout(x)
     return x
 
+
 class CNN(nn.Module):
   def __init__(
     self,
