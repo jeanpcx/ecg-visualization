@@ -3,17 +3,17 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for
 import numpy as np
 import pandas as pd
 from model import *
+from model import CNN
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float, String, Integer, JSON
 
 app = Flask(__name__)
 DATABASE_URL = os.getenv('DATABASE_URL')
+# DATABASE_URL = 'postgresql://postgres:CXJNCPIJGrjaxxKnyLrIVbwOzBPazpQF@roundhouse.proxy.rlwy.net:13721/railway'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
-
 embeddings_dict = {}
 
 def load_embeddings():

@@ -145,6 +145,7 @@ def load_model():
   model = CNN(num_classes = 5, hid_size = 128)
   # model.load_state_dict(torch.load('model_50.pth'))
   # model.load_state_dict()
+  
   model = torch.load('data/model_50.pth', map_location='cpu')
   model.avgpool.register_forward_hook(get_activation('avgpool')) 
   model.eval()
@@ -177,6 +178,7 @@ def get_umap(embedding):
   print("Punto UMAP:", point)
   
   return point
+
 
 # # Prueba de la función con diferentes embeddings
 # embedding1 = [0.1] * 32  # Reemplaza con tus valores reales
