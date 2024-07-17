@@ -141,6 +141,7 @@ def get_activation(name):
     activation[name] = output.detach()
   return hook
 
+
 def load_model():
   model = CNN(num_classes = 5, hid_size = 128)
   # model.load_state_dict(torch.load('model_50.pth'))

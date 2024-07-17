@@ -1,4 +1,4 @@
-window.addEventListener('resize', resizeSVGs);
+// window.addEventListener('resize', resizeSVGs);
 
 
 var scatterZone = document.getElementById('scatter-zone');
@@ -26,6 +26,16 @@ const margin = { top: 20, right: 20, bottom: 20, left: 20 };
 const margin_signal = { top: 10, right: 15, bottom: 25, left: 40 };
 var graphWidth = width - margin.left - margin.right;
 var graphHeight = height - margin.top - margin.bottom;
+// Define dimensions for the minimap
+const minimapWidth = 150;
+const minimapHeight = 150;
+const minimapSvg = d3.select("#minimap")
+.attr("width", minimapWidth)
+.attr("height", minimapHeight);
+
+const minimapG = minimapSvg.append("g");
+const minimapX = d3.scaleLinear().range([0, minimapWidth]);
+const minimapY = d3.scaleLinear().range([minimapHeight, 0]);
 
 const tooltip = d3.select('.tooltip');
 
@@ -38,6 +48,7 @@ var zoom = d3.zoom()
     .on("zoom", function(event) {
         currentZoomState = event.transform;
         applyZoomTransform(event.transform);
+        updateMinimap(event.transform);
     });
 
 function applyZoomTransform(transform) {
@@ -52,45 +63,60 @@ function applyZoomTransform(transform) {
         .attr("cy", d => new_y(d.y));
 }
 
-function zoomToPoint(d) {
-    const pointX = x(d.x);
-    const pointY = y(d.y);
-    const scale = currentZoomState.k * 2;
+// function zoomToPoint(d) {
+//     const pointX = x(d.x);
+//     const pointY = y(d.y);
+//     const scale = currentZoomState.k * 2;
 
-    const translateX = width / 2 - pointX * scale;
-    const translateY = height / 2 - pointY * scale;
+//     const translateX = width / 2 - pointX * scale;
+//     const translateY = height / 2 - pointY * scale;
 
-    const transform = d3.zoomIdentity
-        .translate(translateX, translateY)
-        .scale(scale);
+//     const transform = d3.zoomIdentity
+//         .translate(translateX, translateY)
+//         .scale(scale);
 
-    svg.transition().duration(900).call(zoom.transform, transform);
-}  
+//     svg.transition().duration(900).call(zoom.transform, transform);
+// }  
 
-// Function to get color for hover buttons
-function adjustSaturation(colorHex, targetSaturation) {
-    let originalColor = chroma(colorHex);
-    let adjustedColor = originalColor.set('hsv.s', targetSaturation);
-    return adjustedColor.hex();
-}
+// // Function to get color for hover buttons
+// function adjustSaturation(colorHex, targetSaturation) {
+//     let originalColor = chroma(colorHex);
+//     let adjustedColor = originalColor.set('hsv.s', targetSaturation);
+//     return adjustedColor.hex();
+// }
 
-// Function to resize when window is resized
-function resizeSVGs() {
-    var newWidth = container.clientWidth;
-    var newHeight = container.clientHeight;
+// // Function to resize when window is resized
+// function resizeSVGs() {
+//     var newWidth = container.clientWidth;
+//     var newHeight = container.clientHeight;
 
-    d3.select("#scatter-plot svg")
-        .attr("width", newWidth)
-        .attr("height", newHeight);
+//     d3.select("#scatter-plot svg")
+//         .attr("width", newWidth)
+//         .attr("height", newHeight);
 
-    x.range([0, newWidth - margin.left - margin.right]);
-    y.range([newHeight - margin.top - margin.bottom, 0]);
+//     x.range([0, newWidth - margin.left - margin.right]);
+//     y.range([newHeight - margin.top - margin.bottom, 0]);
 
-    svg.selectAll(".dot")
-        .attr("cx", d => x(d.x))
-        .attr("cy", d => y(d.y));
+//     svg.selectAll(".dot")
+//         .attr("cx", d => x(d.x))
+//         .attr("cy", d => y(d.y));
 
-    svg.call(zoom.transform, currentZoomState); // Reapply current zoom state after resize
+//     svg.call(zoom.transform, currentZoomState); // Reapply current zoom state after resize
+// }
+
+// Function to update the minimap when the main plot is zoomed
+function updateMinimap(transform) {
+    const scaleX = minimapWidth / (graphWidth * transform.k);
+    const scaleY = minimapHeight / (graphHeight * transform.k);
+
+    const translateX = -transform.x * scaleX;
+    const translateY = -transform.y * scaleY;
+
+    d3.select('.viewRect').attr("x", translateX)
+        .attr("y", translateY)
+        .attr("width", minimapWidth / transform.k)
+        .attr("height", minimapHeight / transform.k);
+
 }
 
 // Create SVG container for scatter plot
@@ -388,6 +414,10 @@ function show_signal(d, filter, renderSelected = true) {
                 d3.selectAll(".dot").classed("find-nearby2", false);
                 d3.selectAll("#nearby1 .ecg").remove();
                 d3.selectAll("#nearby2 .ecg").remove();
+                d3.selectAll("#nearby3 .ecg").remove();
+                d3.selectAll('.send-to-container').classed("show", false);
+
+
 
                 if (selectedIds != null){
                     d3.select("#dot-" + ids[1]).classed("find-nearby1", true); // Select new nearby
@@ -454,7 +484,6 @@ function checkSelected(filteredData){
     }
 }
 
-
 function update(data, data_new) {
     let filtered_data = get_filter(data);
 
@@ -469,6 +498,8 @@ function update(data, data_new) {
     }
 
     checkSelected(filtered_data);
+    showMiniMap(filtered_data, data_new);
+
 
     const dots = svg.selectAll(".fix-dot").data(filtered_data, d => d._id);
     dots.exit().remove();
@@ -502,7 +533,7 @@ function update(data, data_new) {
                 // If new point is selected: The user can inspect other signals.
                 d3.selectAll(".dot.examine").classed("examine", false);
                 d3.select(this).classed("examine", true);
-                d3.selectAll('.send-to-container').classed("show", true);
+                // d3.selectAll('.send-to-container').classed("show", true);
                 examine_signal(d);
             }
         });
@@ -529,10 +560,38 @@ function update(data, data_new) {
         })
         .on("click", function (event, d) {
             d3.selectAll(".dot.selected").classed("selected", false);
+            d3.selectAll(".dot.examine").classed("examine", false);
+
             d3.select(this).classed("selected", true);
             let filtered_data = get_filter(data);
             show_signal(d, filtered_data);
         });
+
+        // svg.selectAll(".dot")
+        // .on("mouseover", function (event, d) {
+        //     show_tooltip(d);
+        // })
+        // .on("mouseout", function (event, d) {
+        //     show_tooltip(null, false);
+        // })
+        // .on("click", function (event, d) {
+        //     const new_dot = document.querySelectorAll('.new-dot.selected');
+        //     if ((new_dot.length == 0 ) || (d3.select(this).classed('new-dot'))) {
+
+        //         // If no new point is selected: continue with the normal viewing process.
+        //         d3.selectAll(".dot.selected").classed("selected", false);
+        //         d3.selectAll(".dot.examine").classed("examine", false);
+        //         d3.select(this).classed("selected", true);
+        //         let filtered_data = get_filter(data);
+        //         show_signal(d, filtered_data);
+        //     } else {
+        //         // If new point is selected: The user can inspect other signals.
+        //         d3.selectAll(".dot.examine").classed("examine", false);
+        //         d3.select(this).classed("examine", true);
+        //         d3.selectAll('.send-to-container').classed("show", true);
+        //         examine_signal(d);
+        //     }
+        // });
     applyZoomTransform(currentZoomState);
 
     d3.selectAll(".send-button").on("click", function(event) {
@@ -555,6 +614,57 @@ function update(data, data_new) {
     });
 }
 
+var isMiniMapInitialized = false
+function showMiniMap(data, newData) {
+    // const dots = minimapG.selectAll(".dot").data(data, d => d._id);
+    // dots.exit().remove();
+    // dots.attr("cx", d => x(d.x))
+    //     .attr("cy", d => y(d.y))
+    //     .style("fill", d => cluster_color[d.cluster]);
+
+    // // Add new points
+    // dots.enter().append("circle")
+    //     .attr("class", "dot")
+    //     .attr("r", 1.5)
+    //     .attr("cx", d => minimapX(d.x))
+    //     .attr("cy", d => minimapY(d.y))
+    //     .style("fill", d => cluster_color[d.cluster])
+
+    // Add dots to the minimap
+    minimapG.selectAll(".dot")
+        .data(data)
+        .enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 1.5)
+        .attr("cx", d => minimapX(d.x))
+        .attr("cy", d => minimapY(d.y))
+        .style("fill", d => cluster_color[d.cluster]);
+
+        // Add dots to the minimap
+    minimapG.selectAll(".new-dot")
+        .data(newData)
+        .enter().append("circle")
+        .attr("class", "new-dot dot")
+        .attr("r", 1.5)
+        .attr("cx", d => minimapX(d.x))
+        .attr("cy", d => minimapY(d.y))
+        .style("fill", "lime");
+
+    if (isMiniMapInitialized){
+        console.log('MiniMap is already initialized. Skipping initialization.')
+        return;
+    }
+
+    // Create a rectangle to show the current zoom area
+    const viewRect = minimapG.append("rect")
+        .attr("class", "viewRect")
+        .attr("width", minimapWidth)
+        .attr("height", minimapHeight)
+        .style("fill", "none")
+        .style("stroke", "red");
+
+    isMiniMapInitialized = true
+}
 
 // To load data when index is upload
 document.addEventListener('DOMContentLoaded', function () {
@@ -579,8 +689,12 @@ function fetchDataAndInitialize() {
 
             x.domain(d3.extent(data, d => d.x));
             y.domain(d3.extent(data, d => d.y));
+            minimapX.domain(d3.extent(data, d => d.x));
+            minimapY.domain(d3.extent(data, d => d.y));
+
 
             update(data, data_new);
+            showMiniMap(data, data_new)
 
             d3.selectAll(".cluster-button").on("click", function () {
                 let btn = d3.select(this);
@@ -623,9 +737,6 @@ function fetchDataAndInitialize() {
                 //     clearECGDisplays();
                 // }
             });
-
-            
-
         })
         .catch(error => {
             console.error('Error fetching data:', error);
