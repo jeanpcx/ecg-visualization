@@ -10,8 +10,8 @@ from model import *
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float, String, Integer, JSON
 
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -164,35 +164,58 @@ def examine_signal():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    # Check if all expected form fields are present
+    if 'sex' not in request.form or 'age' not in request.form:
+        return jsonify({'message': 'Missing sex or age information'}), 400
+
     sex = request.form['sex']
     age = request.form['age']
-    file = request.files['csv']
+    file = request.files.get('csv')
+    print('Received:', sex, age)
 
-    # Handle error when not file is uploaded
+    # Handle error when no file is uploaded
     if not file:
-        return jsonify({'message': 'No file found to upload'}), 404
+        return jsonify({'message': 'No file found to upload'}), 400
 
-    # Read the CSV file into a pandas DataFrame
-    df = pd.read_csv(file)
-    x, signal = loader_data(df) # Transform df to send to model, algo get the signal
-    # model = CNN(num_classes = 5, hid_size = 128)
-    embedding, prediction = get_embedding(x) # Evaluate in model
-    umap = get_umap(embedding)
+    # Attempt to read the CSV file into a pandas DataFrame
+    try:
+        df = pd.read_csv(file)
+    except Exception as e:
+        return jsonify({'message': 'Failed to read CSV file', 'error': str(e)}), 400
 
-    # Transform embedding into listo, to upload as JSON
+    try:
+        x, signal = loader_data(df)  # Transform df to send to model, also get the signal
+        embedding, prediction = get_embedding(x)  # Evaluate in model
+    except Exception as e:
+        return jsonify({'message': 'Error loading data and get embedding', 'error': str(e)}), 500
+
+    try:
+        umap = get_umap(embedding)
+    except Exception as e:
+        return jsonify({'message': 'Error get UMAP', 'error': str(e)}), 500
+
+    # Transform embedding into list to upload as JSON
     if isinstance(embedding, np.ndarray):
         embedding = embedding.tolist()
 
-    # Create documents
-    new_signal = Signal(signal = signal, embedding = embedding)
-    new_data = Meta(age = age, sex = sex, pred = int(prediction), x = float(umap[0][0]), y = float(umap[0][1]))
-    
-    db.session.add(new_signal)
-    db.session.add(new_data)
-    db.session.commit() # Send and update database
+    try:
+        # Create documents
+        new_signal = Signal(signal=signal, embedding=embedding)
+        new_data = Meta(age=age, sex=sex, pred=int(prediction), x=float(umap[0][0]), y=float(umap[0][1]))
+        
+        db.session.add(new_signal)
+        db.session.add(new_data)
+        db.session.commit()  # Send and update database
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Database error', 'error': str(e)}), 500
 
     # Reload embeddings with updated
-    load_embeddings()
+    try:
+        load_embeddings()
+    except Exception as e:
+        return jsonify({'message': 'Failed to reload embeddings', 'error': str(e)}), 500
+
     return jsonify({'message': 'Data uploaded successfully!'}), 200
 
 @app.route('/update_nearby', methods=['POST'])
