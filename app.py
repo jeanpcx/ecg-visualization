@@ -175,6 +175,7 @@ def upload_file():
     # Read the CSV file into a pandas DataFrame
     df = pd.read_csv(file)
     x, signal = loader_data(df) # Transform df to send to model, algo get the signal
+    model = CNN(num_classes = 5, hid_size = 128)
     embedding, prediction = get_embedding(x) # Evaluate in model
     umap = get_umap(embedding)
 
