@@ -2,7 +2,6 @@ import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 import numpy as np
 import pandas as pd
-# from model import *
 from model import CNN, ConvNormPool, Relu
 from model import get_activation, load_model, loader_data, get_embedding, get_umap
 
