@@ -4,6 +4,8 @@ import torch.nn.functional as F
 # import pandas as pd
 import numpy as np
 import joblib
+import __main__
+
 # import umap
 
 # Cargar los objetos StandardScaler y UMAP
@@ -96,7 +98,7 @@ class CNN(nn.Module):
     input_size = 12,
     hid_size = 128,
     kernel_size = 3,
-    num_classes = num_classes,
+    num_classes = 5,
     dropout_rate=0.1,
   ):
 
@@ -145,6 +147,7 @@ def get_activation(name):
 
 def load_model():
   model = CNN(num_classes = 5, hid_size = 128)
+  # setattr(__main__, "CNN", CNN)
   model.load_state_dict(torch.load('data/model_50_dict.pth'))
   # model = torch.load('data/model_50.pth', map_location='cpu')
   model.avgpool.register_forward_hook(get_activation('avgpool')) 
