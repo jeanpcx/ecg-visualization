@@ -5,6 +5,8 @@ import pandas as pd
 from model import CNN, ConvNormPool, Relu
 from model import get_activation, load_model, loader_data, get_embedding, get_umap
 
+form model import *
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float, String, Integer, JSON
 

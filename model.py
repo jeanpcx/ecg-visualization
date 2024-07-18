@@ -133,7 +133,8 @@ class CNN(nn.Module):
     # x = F.softmax(self.fc(x), dim=1) #Cross Entropy lo hace automáticamente.
     return x
 
-# model = CNN(num_classes = num_classes, hid_size = 128)
+# create an instance of class
+model = CNN(num_classes = 5, hid_size = 128)
 
 activation = {}
 def get_activation(name):
@@ -143,7 +144,7 @@ def get_activation(name):
 
 
 def load_model():
-  model = CNN(num_classes = 5, hid_size = 128)
+  # model = CNN(num_classes = 5, hid_size = 128)
   model = torch.load('data/model_50.pth', map_location='cpu')
   model.avgpool.register_forward_hook(get_activation('avgpool')) 
   model.eval()
