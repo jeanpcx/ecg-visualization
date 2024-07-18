@@ -10,8 +10,8 @@ from model import *
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text, desc, create_engine, Sequence, Column, Float, String, Integer, JSON
 
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 app = Flask(__name__)
 DATABASE_URL = os.getenv('DATABASE_URL')
