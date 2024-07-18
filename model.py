@@ -96,7 +96,7 @@ class CNN(nn.Module):
     input_size = 12,
     hid_size = 128,
     kernel_size = 3,
-    num_classes = 5,
+    num_classes = num_classes,
     dropout_rate=0.1,
   ):
 
@@ -134,7 +134,7 @@ class CNN(nn.Module):
     return x
 
 # create an instance of class
-model = CNN(num_classes = 5, hid_size = 128)
+#model = CNN(num_classes = 5, hid_size = 128)
 
 activation = {}
 def get_activation(name):
@@ -144,8 +144,9 @@ def get_activation(name):
 
 
 def load_model():
-  # model = CNN(num_classes = 5, hid_size = 128)
-  model = torch.load('data/model_50.pth', map_location='cpu')
+  model = CNN(num_classes = 5, hid_size = 128)
+  model.load_state_dict(torch.load('data/model_50_dict.pth'))
+  # model = torch.load('data/model_50.pth', map_location='cpu')
   model.avgpool.register_forward_hook(get_activation('avgpool')) 
   model.eval()
   return model
