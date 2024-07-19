@@ -604,3 +604,8 @@ input[type="file"] {
 
 
 
+.viewRect{
+    z-index: 1000; 
+
+    
+}

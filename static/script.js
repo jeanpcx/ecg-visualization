@@ -7,7 +7,7 @@ var scatterRect = scatterZone.getBoundingClientRect();
 // Define clusters names and colors
 const clusterLabels = ["NORM", "MI", "STTC", "CD", "HYP"];
 var cluster_color = ["gray", "#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#03305A"]
-const nearby_colors = ["#03305A", 'gold', 'darkorchid', 'gray']
+const nearby_colors = ["#03305A", 'gold', 'darkorchid', 'green']
 
 function clear_examine(){
     d3.selectAll(".dot").classed("examine", false);
@@ -171,7 +171,7 @@ function create_sliders(min_age, max_age){
     noUiSlider.create(ageSlider, {
         start: [40, 70],
         connect: true,
-        range: { 'min': min_age, 'max': max_age},
+        range: { 'min': min_age, 'max': 100},
         tooltips: true,
         format: {
             to: function (value) {return value.toFixed(0);},
@@ -635,7 +635,7 @@ function showMiniMap(data, newData) {
         .data(data)
         .enter().append("circle")
         .attr("class", "dot")
-        .attr("r", 1.5)
+        .attr("r", 1)
         .attr("cx", d => minimapX(d.x))
         .attr("cy", d => minimapY(d.y))
         .style("fill", d => cluster_color[d.cluster]);
@@ -645,7 +645,7 @@ function showMiniMap(data, newData) {
         .data(newData)
         .enter().append("circle")
         .attr("class", "new-dot dot")
-        .attr("r", 1.5)
+        .attr("r", 1)
         .attr("cx", d => minimapX(d.x))
         .attr("cy", d => minimapY(d.y))
         .style("fill", "lime");

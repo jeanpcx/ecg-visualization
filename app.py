@@ -2,9 +2,6 @@ import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 import numpy as np
 import pandas as pd
-# from model import CNN, ConvNormPool, Relu
-# from model import get_activation, load_model, loader_data, get_embedding, get_umap
-
 from model import *
 
 from flask_sqlalchemy import SQLAlchemy
@@ -64,7 +61,7 @@ def get_data():
     ).subquery()#.filter(Meta.cluster.isnot(None)).subquery()
 
     # Get n records
-    query = db.session.query(subquery).filter(subquery.c.row_num <= 50)
+    query = db.session.query(subquery).filter(subquery.c.row_num <= 400)
     result = query.all()
 
     json = [dict(row._mapping) for row in result]
