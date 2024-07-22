@@ -1,6 +1,5 @@
 // window.addEventListener('resize', resizeSVGs);
 
-
 var scatterZone = document.getElementById('scatter-zone');
 var scatterRect = scatterZone.getBoundingClientRect();
 
@@ -26,6 +25,9 @@ const margin = { top: 20, right: 20, bottom: 20, left: 20 };
 const margin_signal = { top: 10, right: 15, bottom: 25, left: 40 };
 var graphWidth = width - margin.left - margin.right;
 var graphHeight = height - margin.top - margin.bottom;
+let x_signal = d3.scaleLinear().domain([0, 1000]);
+let y_signal = d3.scaleLinear().domain([-1, 1]);
+
 // Define dimensions for the minimap
 const minimapWidth = 150;
 const minimapHeight = 150;
@@ -249,7 +251,6 @@ function show_tooltip(d, state = true){
         } else {
             var label = clusterLabels[d.cluster];    
             var color = cluster_color[d.cluster]
-
         }
 
         // var tooltipX = event.pageX;
@@ -281,9 +282,6 @@ function smooth_signal(data, windowSize) {
     });
 }
 
-let x_signal = d3.scaleLinear().domain([0, 1000]);
-let y_signal = d3.scaleLinear().domain([-1, 1]);
-
 function draw_signal(d, signal, container_id=0){
     const container = d3.select("#nearby"+container_id);
     container.classed('graph', true);
@@ -293,7 +291,6 @@ function draw_signal(d, signal, container_id=0){
     const signal_info = signal_zone.append("div").attr("class", "ecg-info");
 
     colorNearby = (container_id == 0) ? cluster_color[d.cluster] : nearby_colors[container_id];
-    signal_zone.style("--fill", colorNearby)
 
     if (d.cluster === null) {
         console.log('d.cluster es undefined');
@@ -301,6 +298,7 @@ function draw_signal(d, signal, container_id=0){
         .html(`<p style="color:white;">Pred: ${clusterLabels[d.pred]}</p>`)
         .style("background-color", cluster_color[0])
         .style("color", "white");
+        colorNearby = "lime"
     } else {
         signal_info.append("div").attr("class", "info-block")
         .html(`<p style="color:white;">${d.label}</p>`)
@@ -308,6 +306,7 @@ function draw_signal(d, signal, container_id=0){
         .style("color", "white");
     }
 
+    signal_zone.style("--fill", colorNearby)
     signal_info.append("div").attr("class", "info-block").html(`<p>${(d.sex === "Hombre" ? "Men" : "Women")}</p>`);
     signal_info.append("div").attr("class", "info-block").html(`<p>${d.age} years</p>`);
 
@@ -417,8 +416,6 @@ function show_signal(d, filter, renderSelected = true) {
                 d3.selectAll("#nearby3 .ecg").remove();
                 d3.selectAll('.send-to-container').classed("show", false);
 
-
-
                 if (selectedIds != null){
                     d3.select("#dot-" + ids[1]).classed("find-nearby1", true); // Select new nearby
                     d3.select("#dot-" + ids[2]).classed("find-nearby2", true); // Select new nearby                  
@@ -435,8 +432,6 @@ function show_signal(d, filter, renderSelected = true) {
                     }else{
                         showNotification('Oopsie! 😅 The nearest ' + i + ' point isnt within the filters', 'warning')
                     }
-
-
                 }
             }
         })
@@ -490,16 +485,13 @@ function update(data, data_new) {
      // Check if any cluster is selected
     if (filtered_data.length === 0) {
         clearECGDisplays();
-        svg.selectAll(".dot").remove();
-        d3.select("#scatter-plot").style("display", "none");
+        svg.selectAll(".fix-dot").remove();
+        // d3.select("#scatter-plot").style("display", "none");
         return;
-    }else{
-        d3.select("#scatter-plot").style("display", "block");
     }
 
     checkSelected(filtered_data);
     showMiniMap(filtered_data, data_new);
-
 
     const dots = svg.selectAll(".fix-dot").data(filtered_data, d => d._id);
     dots.exit().remove();
@@ -593,6 +585,7 @@ function update(data, data_new) {
         //     }
         // });
     applyZoomTransform(currentZoomState);
+    updateMinimap(currentZoomState);
 
     d3.selectAll(".send-button").on("click", function(event) {
         var sendTo = d3.select(this).attr("send-to"); // Nearby 1 or 2?
@@ -616,36 +609,36 @@ function update(data, data_new) {
 
 var isMiniMapInitialized = false
 function showMiniMap(data, newData) {
-    // const dots = minimapG.selectAll(".dot").data(data, d => d._id);
-    // dots.exit().remove();
-    // dots.attr("cx", d => x(d.x))
-    //     .attr("cy", d => y(d.y))
-    //     .style("fill", d => cluster_color[d.cluster]);
-
-    // // Add new points
-    // dots.enter().append("circle")
-    //     .attr("class", "dot")
-    //     .attr("r", 1.5)
-    //     .attr("cx", d => minimapX(d.x))
-    //     .attr("cy", d => minimapY(d.y))
-    //     .style("fill", d => cluster_color[d.cluster])
-
-    // Add dots to the minimap
-    minimapG.selectAll(".dot")
-        .data(data)
-        .enter().append("circle")
-        .attr("class", "dot")
-        .attr("r", 1)
-        .attr("cx", d => minimapX(d.x))
+    const dots = minimapG.selectAll(".dot").data(data, d => d._id);
+    dots.exit().remove();
+    dots.attr("cx", d => minimapX(d.x))
         .attr("cy", d => minimapY(d.y))
         .style("fill", d => cluster_color[d.cluster]);
+
+    // Add new points
+    dots.enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 0.8)
+        .attr("cx", d => minimapX(d.x))
+        .attr("cy", d => minimapY(d.y))
+        .style("fill", d => cluster_color[d.cluster])
+
+    // // Add dots to the minimap
+    // minimapG.selectAll(".dot")
+    //     .data(data)
+    //     .enter().append("circle")
+    //     .attr("class", "dot")
+    //     .attr("r", 1)
+    //     .attr("cx", d => minimapX(d.x))
+    //     .attr("cy", d => minimapY(d.y))
+    //     .style("fill", d => cluster_color[d.cluster]);
 
         // Add dots to the minimap
     minimapG.selectAll(".new-dot")
         .data(newData)
         .enter().append("circle")
         .attr("class", "new-dot dot")
-        .attr("r", 1)
+        .attr("r", 1.5)
         .attr("cx", d => minimapX(d.x))
         .attr("cy", d => minimapY(d.y))
         .style("fill", "lime");
@@ -692,9 +685,8 @@ function fetchDataAndInitialize() {
             minimapX.domain(d3.extent(data, d => d.x));
             minimapY.domain(d3.extent(data, d => d.y));
 
-
             update(data, data_new);
-            showMiniMap(data, data_new)
+            // showMiniMap(data, data_new);
 
             d3.selectAll(".cluster-button").on("click", function () {
                 let btn = d3.select(this);
@@ -732,10 +724,6 @@ function fetchDataAndInitialize() {
 
             ageSlider.noUiSlider.on('set', function (values, handle) {
                 update(data, data_new);
-                // const selected_dot = d3.select(".dot.selected").data()[0];
-                // if (!selected_dot) {
-                //     clearECGDisplays();
-                // }
             });
         })
         .catch(error => {

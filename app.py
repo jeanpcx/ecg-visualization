@@ -61,7 +61,7 @@ def get_data():
     ).subquery()#.filter(Meta.cluster.isnot(None)).subquery()
 
     # Get n records
-    query = db.session.query(subquery).filter(subquery.c.row_num <= 400)
+    query = db.session.query(subquery).filter(subquery.c.row_num <= 500)
     result = query.all()
 
     json = [dict(row._mapping) for row in result]

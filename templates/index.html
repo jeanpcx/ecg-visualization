@@ -31,7 +31,7 @@
         <div id="header">
             <div id="title">
                 <h1>Interactive ECG Visualization</h1>
-                <p>ECG visualization tool for cardiologists</p>
+                <p>Customized interface to visualize complex collections of objects</p>
             </div>
             <div id="filter-container">
                 <div class="filter" id="gender-icons">
@@ -107,15 +107,5 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script src="{{ url_for('static', filename='upload.js') }}"></script>
-
-    <!-- <script>
-        document.getElementById('upload-button').addEventListener('click', () => {
-            document.getElementById('file-input').click();
-        });
-
-        document.getElementById('file-input').addEventListener('change', () => {
-            document.getElementById('upload-form').submit();
-        });
-    </script> -->
 </body>
 </html>
