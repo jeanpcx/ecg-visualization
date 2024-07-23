@@ -5,8 +5,9 @@ var scatterRect = scatterZone.getBoundingClientRect();
 
 // Define clusters names and colors
 const clusterLabels = ["NORM", "MI", "STTC", "CD", "HYP"];
-var cluster_color = ["gray", "#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#03305A"]
-const nearby_colors = ["#03305A", 'gold', 'darkorchid', 'green']
+var cluster_color = ["gray", "blue", "darkorange", "green", "purple", "#03305A"]
+// var cluster_color = ["gray", "#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#03305A"]
+const nearby_colors = ["#03305A", 'gold', 'darkorchid', 'orangered']
 
 function clear_examine(){
     d3.selectAll(".dot").classed("examine", false);
@@ -298,7 +299,7 @@ function draw_signal(d, signal, container_id=0){
         .html(`<p style="color:white;">Pred: ${clusterLabels[d.pred]}</p>`)
         .style("background-color", cluster_color[0])
         .style("color", "white");
-        colorNearby = "lime"
+        colorNearby = cluster_color[d.pred]
     } else {
         signal_info.append("div").attr("class", "info-block")
         .html(`<p style="color:white;">${d.label}</p>`)
@@ -535,7 +536,7 @@ function update(data, data_new) {
     newDots.exit().remove();
     newDots.attr("cx", d => x(d.x))
         .attr("cy", d => y(d.y))
-        .style("fill", "lime");
+        .style("fill", d => cluster_color[d.pred]);
 
     newDots.enter().append("circle")
         .attr("class", "new-dot dot")
@@ -543,7 +544,7 @@ function update(data, data_new) {
         .attr("cx", d => x(d.x))
         .attr("cy", d => y(d.y))
         .attr("id", d => "new-dot-" + d._id)
-        .style("fill", "lime")
+        .style("fill", d => cluster_color[d.pred])
         .on("mouseover", function (event, d) {
             show_tooltip(d);
         })
@@ -641,7 +642,7 @@ function showMiniMap(data, newData) {
         .attr("r", 1.5)
         .attr("cx", d => minimapX(d.x))
         .attr("cy", d => minimapY(d.y))
-        .style("fill", "lime");
+        .style("fill", "red");
 
     if (isMiniMapInitialized){
         console.log('MiniMap is already initialized. Skipping initialization.')

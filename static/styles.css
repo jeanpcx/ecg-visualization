@@ -239,9 +239,9 @@ p{
 
 .dot.examine{
     r: 0.35rem !important;
-    fill: green !important;
+    fill: orangered !important;
     stroke: black;
-    stroke-width: 1.5;
+    stroke-width: 1.5px;
     filter: drop-shadow(0 0 9px rgb(32, 32, 32));
 }
 
@@ -271,6 +271,11 @@ p{
 
 .dot.nearby2{
     fill: darkorchid !important;
+}
+
+.new-dot, .new-dot.selected{
+    stroke: red;
+    stroke-width: 2px;
 }
 
 
