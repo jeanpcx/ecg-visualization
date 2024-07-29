@@ -60,6 +60,7 @@ p{
     display: flex;
     flex-direction: row;
     overflow: hidden;
+    gap: 1rem;
 }
 
 /* ---------------------------------------------------------------  Filters Styles */
@@ -138,18 +139,18 @@ p{
     cursor: pointer;
     border: none;
     border-radius: 0.4rem;
-    border-bottom: 5px solid var(--cluster-color);
+    border-bottom: 5px solid var(--color);
     background-color: #E9E9EA;
     transition: background-color 0.3s;
 }
 
 .button:hover {
-    background-color: var(--cluster-color);
+    background-color: var(--color);
     color: white;
 }
 
 .button.selected {
-    background-color: var(--cluster-color);
+    background-color: var(--color);
     color: white;
 }
 
@@ -190,15 +191,17 @@ p{
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    flex: 6; 
-    margin: 0.8rem;
+    /* flex: 6; */
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    /* margin: 0.8rem; */
 }
 
 /* --------------------------------------------------- Tooltip */
 .tooltip {
     position: absolute;
-    top: 10px; /* Ajusta este valor según sea necesario */
-    left: 10px; /* Ajusta este valor según sea necesario */
+    top: 10px;
+    left: 10px;
 
     text-align: left;
     width: auto;
@@ -208,7 +211,7 @@ p{
     background: rgb(245, 245, 245);
     border: none;
     border-radius: 0.5rem;
-    border-bottom: 5px solid var(--cluster-color);
+    border-bottom: 5px solid var(--color);
     box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
     opacity: 0;
     transition: opacity 0.3s;
@@ -251,12 +254,12 @@ p{
 }
 
 .dot.find-nearby1{
-    stroke: gold;
+    stroke: darkred;
     stroke-width: 2px;
 }
 
 .dot.find-nearby2{
-    stroke: darkorchid;
+    stroke: lightsalmon;
     stroke-width: 2px;
 }
 
@@ -264,13 +267,13 @@ p{
     r: 0.35rem !important;
     /* fill: #c505b2 !important; */
     /* fill: var(--fill) !important; */
-    fill: gold !important;
+    fill: darkred !important;
     stroke: black;
     stroke-width: 1px;
 }
 
 .dot.nearby2{
-    fill: darkorchid !important;
+    fill: lightsalmon !important;
 }
 
 .new-dot, .new-dot.selected{
@@ -278,17 +281,44 @@ p{
     stroke-width: 2px;
 }
 
+.ecg-section{
+    display: flex;
+    gap: 0.4rem;
+    width: 100%;
+    height: 230px;
+}
+
+.ecg-block{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 2%;
+    border-radius: 0.4rem;
+    box-sizing: border-box;
+    height: 100%;
+    gap: 0.4rem;
+}
+
+.ecg-block h3{
+    margin: 0;
+    width: fit-content;
+}
+
+.ecg-header{
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 0.6rem;
+    box-sizing: border-box;
+}
 
 
 /* ---------------------------------------------------------------  Signal plot*/
 #ecg-zone{
     flex: 5;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
     height: 100%;
-    gap: 1.3rem;
+    overflow-y: auto;
 }
 
 .ecg-content{
@@ -332,8 +362,11 @@ p{
 
 /* --------------------------------------------------- ECG Signal */
 
+
+
 .ecg{
     width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: row;
     align-items:flex-start;
@@ -343,24 +376,23 @@ p{
     background: rgb(245, 245, 245);
     border: none;
     border-radius: 0.5rem;
-    border-bottom: 7px solid var(--fill);
+    border-bottom: 7px solid var(--color);
 
     box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    transition: border-bottom 0.2s ease-out;
 }
 
 .ecg-info {
-    margin: 0.5rem;
-    height: fit-content;
-    width: 12%;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     justify-content: flex-start;
     gap: 0.5rem;
     box-sizing: border-box;
 }
 
 .ecg-plot {
-    flex:2;
+    width: 100%;
+    height: 100%;
 }
 
 .ecg.highlight {
@@ -400,8 +432,7 @@ p{
     text-align: center;
     border-radius: 0.3rem;
     background-color: #E9E9EA;
-    /* display: flex;
-    gap: 0.5rem; */
+    height: 100%;
 }
 
 .ecg-info p{
@@ -427,14 +458,14 @@ p{
     border-bottom: 5px solid #03305A;
     box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
     opacity: 0;
-    transition: opacity 0.5s;
+    transition: 10s ease;
 }
 
 .modal.show {
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.9;
+    opacity: 1;
 }
 
 .modal label{
@@ -443,13 +474,24 @@ p{
 
 #form-container{
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     height: 100%;
+    width: 100%;
+    gap: 1.5rem;
 }
 
-#upload-op{
+#form-container h1{
+    margin: 0;
+    font-size: 3rem;
+}
+
+#sex-icons i{
+    font-size: 2.5rem;
+}
+
+#options-container{
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -458,8 +500,10 @@ p{
 }
 
 #age {
-    width: 20%;
+    width: 50%;
+    aspect-ratio: 1/0.7;
     font-family: "DM Sans", sans-serif;
+    font-size: 1rem;
     color: #4B5563;
     border: 1px solid #ccc;
     border-radius: 0.3rem;
@@ -476,7 +520,7 @@ form{
     flex-direction: column;
     align-items: center;
     height: 50%;
-    gap: 0.5rem;
+    gap: 1.9rem;
 }
 
 input[type="file"] {
@@ -485,11 +529,9 @@ input[type="file"] {
 /* Style the label as the custom button */
 .custom-file-upload {
     width: 100%;
-    height: 100%;
-    border: 1px dashed #ccc;
+    height: 90%;
+    border: 3px dashed #ccc;
     border-radius: 0.5rem;
-    margin: 1rem;
-    margin-bottom: 0;
     text-align: center;
     cursor: pointer;
     background-color: #E9E9EA;
@@ -498,6 +540,10 @@ input[type="file"] {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.custom-file-upload.check{
+    background-color: lightblue;
 }
 
 
@@ -517,19 +563,11 @@ input[type="file"] {
 } */
 
 .send-to-container{
-    width: 100%;
-    display: none;
+    display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
     padding: 5px;
-    opacity: 0;
-    transition: opacity 0.5s;
-}
-
-.send-to-container.show {
-    display: flex;
-    opacity: 0.9;
 }
 
 #notification {
@@ -574,16 +612,36 @@ input[type="file"] {
     margin: 0;
 }
 
-.loader {
+.section-container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+}
+
+#loader-container{
     display: none;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+h3{
+    text-align: center;
+}
+
+.loader {
+    display: block;
     border: 16px solid #f3f3f3;
     border-top: 16px solid #03305A;
     border-radius: 50%;
     width: 120px;
     height: 120px;
     animation: spin 2s linear infinite;
-    margin: 100px auto;
+    margin: auto auto;
   }
+
+
 
   @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -597,22 +655,111 @@ input[type="file"] {
 
   #minimap-container {
     position: absolute;
-    z-index: 500; 
-    bottom: 2.5rem;
-    left: 2rem;
-    border: 1px solid #ccc;
-    border-radius: 0.4rem;
+    /* bottom: 2.5rem;
+    left: 10px; */
+    
+    /* left: 2rem; */
+    z-index: 500;
     box-shadow: 0px 5px 6px rgba(0,0,0,0.2);
   }
+
   #minimap {
-    background: rgb(245, 245, 245, 0.6);
+    background: rgb(245, 245, 245, 1);
     pointer-events: none;
   }
 
 
 
 .viewRect{
-    z-index: 1000; 
+    z-index: 1000;     
+}
 
-    
+.send-button{
+    font-size: 0.6rem;
+}
+
+#send-button2:hover{
+    color:#111827;
+}
+
+#ecg-inspect{
+    display: none;
+}
+
+
+#ecg-inspect.show {
+    display: flex;
+    opacity: 1;
+}
+
+
+.option-container{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#result-container{
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    height: 100%;
+}
+
+#result-container h1, h2{
+    margin: 0;
+}
+
+#result-container span{
+    font-weight: normal;
+}
+
+#results-box{
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    width: 100%;
+    height: 50%;
+}
+
+.result{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #ccc;
+    flex: 1;
+    height: 100%;
+    border-radius: 0.4rem;
+    gap: 0.4rem;
+}
+
+
+.result p{
+    font-size: 1rem;
+    margin: 0;
+}
+
+.result i, .result .p-result{
+    font-size: 5rem;
+    color: #03305A;
+    margin: 0;
+    font-weight: bold;
+    height: 55%;
+    /* line-height: 1;  */
+}
+
+.result #p-prediction{
+    font-size: 2.5rem;
+    align-content: center;
+}
+
+#result-prediction p{
+    color: white;
+}
+
+#result-prediction{
+    background-color: var(--color);
 }

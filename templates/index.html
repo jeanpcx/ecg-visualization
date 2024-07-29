@@ -23,9 +23,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <div id="minimap-container">
-        <svg id="minimap" width="150" height="150"></svg>
-    </div>
     <div id="notification"><i id="icon-message" class="fa" aria-hidden="true"></i><p id="text-not">Esto es un texto de ejemplo</p></div>
     <div id="content">
         <div id="header">
@@ -37,8 +34,8 @@
                 <div class="filter" id="gender-icons">
                     <p>Sex: </p>
                     <i class="fa fa-users selected" data-sex="ALL" title="All"></i>
-                    <i class="fa fa-person-dress" data-sex="Mujer" title="Womens"></i>
-                    <i class="fa fa-person" data-sex="Hombre" title="Mens"></i>
+                    <i class="fa fa-person-dress" data-sex="Women" title="Womens"></i>
+                    <i class="fa fa-person" data-sex="Men" title="Mens"></i>
                 </div>
                 
                 <div class="filter" id="slider-container">
@@ -46,64 +43,141 @@
                     <div id="age-slider"></div>
                 </div>
                 <div class="filter" id="button-container"></div>
-                <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+                <!-- <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
                     <input type="file" id="file-input" name="file" style="display: none;">
-                </form>
+                </form> -->
                 <button id="upload-button" class="upload-button">
                     <i class="fa fa-upload"></i> Upload ECG
                 </button>
             </div>
         </div>
         <div id="graph-zone">
+            <div id="ecg-zone">
+
+                <div class="ecg-section">
+                    <div class="ecg-block" id="nearby0">
+                       <div class="ecg-header">
+                           <h3>Selected Point</h3>
+                           <div class="ecg-info"></div>
+                       </div>
+                       <div class="ecg">
+                           <div class="ecg-plot"></div>
+                       </div>
+                    </div>
+                </div>
+
+                <div class="ecg-section" id="ecg-inspect">
+                    <div class="ecg-block" id="nearby3">
+                       <div class="ecg-header">
+                           <h3>Inspect Point</h3>
+                           <div class="ecg-info"></div>
+                           <div class="send-to-container">
+                            <button class="button send-button" send-to="1" style="--color: darkred;">Select as Super Near</button>
+                            <button class="button send-button" id="send-button2" send-to="2" style="--color: lightsalmon;">Select as Near</button>
+                        </div>
+                       </div>
+                       <div class="ecg">
+                           <div class="ecg-plot"></div>
+                       </div>
+                    </div>
+                </div>
+
+                 <div class="ecg-section">
+                     <div class="ecg-block" id="nearby1">
+                        <div class="ecg-header">
+                            <h3>Super Near Point</h3>
+                            <div class="ecg-info"></div>
+                        </div>
+                        <div class="ecg">
+                            <div class="ecg-plot"></div>
+                        </div>
+                     </div>
+    
+                     <div class="ecg-block" id="nearby2">
+                        <div class="ecg-header">
+                            <h3>Near Point</h3>
+                            <div class="ecg-info"></div>
+                        </div>
+                        <div class="ecg">
+                            <div class="ecg-plot"></div>
+                        </div>
+                     </div>
+                 </div>
+            </div>
+
             <div id="scatter-zone">
                 <p id="noneCluster" style="display: none;">Please, select one cluster</p>
                 <div id="scatter-plot" style="display: block;"></div>
             </div>
-            <div id="ecg-zone">
-                <div class="ecg-content" id="nearby0"></div>
-                <div class="nearby">
-                    <div class="ecg-content" id="nearby3">
-                        <div class="send-to-container">
-                            <button class="button send-button" send-to="1" style="--cluster-color: gold;">Select as nearby 1</button>
-                            <button class="button send-button" send-to="2" style="--cluster-color: darkorchid;">Select as nearby 2</button>
-                        </div>
-                    </div>
-                    <div class="ecg-content" id="nearby1"></div>
-                    <div class="ecg-content" id="nearby2"></div>
-                </div>
-            </div>
         </div>
     </div>
     <div class="tooltip"></div>
+    <div id="minimap-container" style="width: 80px; height: 80px;">
+        <svg id="minimap"></svg>
+    </div>
     <div class="modal">
-        <div id="loader" class="loader"></div>
-        <div id="form-container">
-            <h1>Upload ECG</h1>
-            <form id="ecgForm" method="post" action="/upload" enctype="multipart/form-data">
-                <div id="upload-op">
-                    <label for="sex">Sex</label>
-                    <div id="sex-icons">
-                        <i class="fa fa-person-dress selected" data-sex="Mujer" title="Womens"></i>
-                        <i class="fa fa-person" data-sex="Hombre" title="Mens"></i>
-                    </div>
-                    <input type="hidden" id="sex" name="sex"><br><br>
-                    <label for="age">Age</label>
-                    <input type="number" id="age" name="age" min="1" step="1" value="24"><br><br>
+        <div id="result-container">
+            <h1>Ta-da! ✨ <span>Here are your results</span></h1>
+            <h2></h2>
+            <div id="results-box">
+                <div class='result' id="result-age">
+                    <!-- <h1>55</h1> -->
+                    <p class="p-result" id="p-age">55</p>
+                    <p>years</p>
                 </div>
-                <!-- <input type="file" id="csv" name="csv" accept=".csv"><br><br> -->
-                <input type="file" id="csv" name="csv" accept=".csv">
-                <label for="csv" class="custom-file-upload">
+                <div class='result' id="result-sex">
+                    <i id="i-sex" class="fa fa-person-dress"></i>
+                    <p id="p-sex">Sexo</p>
+                </div>
+                <div class='result' id="result-prediction">
+                    <p class="p-result" id="p-prediction">NORM</p>
+                    <p>Prediction</p>
+                </div>
+            </div>
+            <button class="button" id="go-explore" style="--color: #03305A;">Go and explore!</button>
+        </div>
+
+
+        <div id="loader-container">
+            <div id="loader" class="loader"></div>
+            <h2>Hang on a sec! We're giving your ECG a high-tech checkup... 🔍</h2>
+        </div>
+        <div id="form-container">
+            <div class="section-container">
+                <label for="csv" class="custom-file-upload" id="file-upload">
                     Choose your file
                 </label>
                 <span id="file-name"></span>
-                <input class="upload-button" id="upload-info" type="button" value="Submit">
-            </form>
+            </div>
+
+            <div class="section-container">
+                <h1>Let's Dive In!</h1>
+                <h3>Upload your new ECG Signal here</h3>
+                <form id="ecgForm" method="post" action="/upload" enctype="multipart/form-data">
+                    <div id="options-container">
+                        <input type="hidden" id="sex" name="sex">
+                         <div class="option-container">
+                            <p>Sex</p>
+                             <div id="sex-icons">
+                                 <i class="fa fa-person-dress selected" data-sex="Women" title="Womens"></i>
+                                 <i class="fa fa-person" data-sex="Men" title="Mens"></i>
+                             </div>
+                         </div>
+
+                         <div class="option-container">
+                            <p>Age</p>
+                            <input type="number" id="age" name="age" min="1" step="1" value="24">
+                         </div>
+                        
+                    </div>
+                    <input type="file" id="csv" name="csv" accept=".csv">
+                    
+                    <input class="upload-button" id="upload-info" type="button" value="Submit">
+                </form>
+            </div>
+
         </div>
     </div>
-    <!-- <div class="warning" style="display: flex;">
-        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-        <p>Ojo! Haciendo Tarea</p>
-    </div> -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script src="{{ url_for('static', filename='upload.js') }}"></script>

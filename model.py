@@ -1,20 +1,38 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# import pandas as pd
 import numpy as np
 import joblib
-# import __main__
 
-# import umap
+# Define the map classes
+class_tag = {
+    0: 'NORM',
+    1: 'MI',
+    2: 'STTC',
+    3: 'CD',
+    4: 'HYP'
+}
 
-# Cargar los objetos StandardScaler y UMAP
+def apply_standardizer(X, ss):
+  """
+  Apply a standard scaler to each element in a list of arrays.
+  Returns:    np.array: Array containing standardized versions of each input array in X.
+  """
+  X_tmp = []
+  for x in X:
+    x_shape = x.shape
+    X_tmp.append(ss.transform(x.flatten()[:,np.newaxis]).reshape(x_shape))
+  X_tmp = np.array(X_tmp)
+
+  return X_tmp
+
+# Load objects StandardScaler (For normalize input) and UMAP
 print('Loading tools..')
 scaler = joblib.load('data/scaler.pkl')
 reducer = joblib.load('data/reducer.pkl')
 print('Loaded! tools..')
 
-
+# Define model
 class Relu(nn.Module):
   def forward(self, x):
     return torch.relu(x)
@@ -132,52 +150,49 @@ class CNN(nn.Module):
     x = self.dropout(x)
     x = self.fc(x)
     #x = torch.sigmoid(self.fc(x))
-    # x = F.softmax(self.fc(x), dim=1) #Cross Entropy lo hace automáticamente.
+    x = F.softmax(x, dim=1) #Cross Entropy lo hace automáticamente.
     return x
 
-# create an instance of class
-#model = CNN(num_classes = 5, hid_size = 128)
-
+# Define Hook to get embeddings (latent space)
 activation = {}
 def get_activation(name):
   def hook(model, input, output):
     activation[name] = output.detach()
   return hook
 
-
+# Function to load model, define hook and set evaluation mode
 def load_model():
   model = CNN(num_classes = 5, hid_size = 128)
-  # setattr(__main__, "CNN", CNN)
-  model.load_state_dict(torch.load('data/model_50_dict.pth', map_location=torch.device('cpu')))
-  # model = torch.load('data/model_50.pth', map_location='cpu')
+  model.load_state_dict(torch.load('data/model_dict.pth', map_location=torch.device('cpu')))
   model.avgpool.register_forward_hook(get_activation('avgpool')) 
   model.eval()
   return model
 
+# Fcuntion to read csv, convert to npy float, standarize and get signal
 def loader_data(df):
   df = df.astype(np.float64)
-  df = df.to_numpy()
-  df = scaler.transform(df)
+  # df = df.to_numpy()
+  df = apply_standardizer(df.to_numpy(), scaler)
+  # df = scaler.transform(df)
   signal = df[:, 0].tolist()
-
   x = df.T.reshape(1, 12, 1000)
   x = torch.tensor(x).float()
+
   return x, signal
 
+# Function to get embedding, prediction and label: load model, pass model
 def get_embedding(x):
   model = load_model()
   with torch.no_grad():
     yhat = model(x)
     prediction = (torch.argmax(yhat, dim=1)).cpu().numpy()[0]
     embeddings = activation['avgpool'].cpu().numpy()
+    label = class_tag.get(prediction, 0)
   result = np.squeeze(embeddings)
 
-  return result, prediction
+  return result, prediction, label
 
+# Get 2d projection with the reducer pre train
 def get_umap(embedding):
-  # Transformar usando el reducer cargado
   point = reducer.transform([embedding])
-  # Verificar el punto UMAP
-  print("Punto UMAP:", point)
-  
   return point

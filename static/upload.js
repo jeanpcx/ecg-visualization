@@ -1,36 +1,18 @@
-// Display notification
-function showNotification(text, type = "check") {
-    const iconElement = document.getElementById('icon-message');
-    const notificationElement = document.getElementById('notification');
-
-    switch (type) {
-        case 'check':
-            iconElement.className = 'fa fa-check-circle';
-            d3.select('#notification').classed("warning", false);
-            d3.select('#notification').classed("alert", false);
-            break;
-        case 'warning':
-            iconElement.className = 'fa fa-exclamation-circle';
-            d3.select('#notification').classed("warning", true);
-            break;
-        case 'alert':
-            iconElement.className = 'fa fa-cogs';
-            d3.select('#notification').classed("alert", true);
-            break;
-    }
-
-    d3.select("#text-not").text(text);
-    d3.select("#notification").classed("show", true);
-    setTimeout(function() {
-        d3.select("#notification").classed("show", false);
-    }, 8000);
-}
-
 // Get the file name and display
 document.getElementById('csv').addEventListener('change', function() {
     var fileName = this.files[0].name;
-    document.getElementById('file-name').textContent = fileName;
+
+    var fileUploadElement = document.getElementById('file-upload');
+    fileUploadElement.textContent = fileName;
+    fileUploadElement.classList.add('check');   
+
 });
+
+function resetUploadLabel(){
+    var fileUploadElement = document.getElementById('file-upload');
+    fileUploadElement.textContent = "Choose your file";
+    fileUploadElement.classList.remove('check');   
+}
 
 // Get the inicial selection of sex
 const selectedIcon = document.querySelector('#sex-icons i.selected');
@@ -47,7 +29,7 @@ document.querySelectorAll('#sex-icons i').forEach(icon => {
 // Add event listener to the button upload
 document.getElementById('upload-button').addEventListener('click', () => {
     d3.select('.modal').classed("show", true);
-    d3.select('#form-container').style('display', 'flex');
+    // d3.select('#form-container').style('display', 'flex');
 });
 
 // Function to send info and upload data
@@ -56,7 +38,7 @@ document.querySelector('#upload-info').addEventListener('click', function(event)
     event.preventDefault(); // To avoid that refresh de page
     
     // Display loader and hide form
-    d3.select('#loader').style('display', 'block');
+    d3.select('#loader-container').style('display', 'block');
     d3.select('#form-container').style('display', 'none');
     const formData = new FormData(form); // Get info form Form
 
@@ -65,20 +47,36 @@ document.querySelector('#upload-info').addEventListener('click', function(event)
         body: formData
     })
     .then(response => response.json())
-    .then(response => { })
+    .then(response => { 
+        d3.select('#loader-container').style('display', 'none');
+        d3.select('#result-container').style('display', 'flex');
+
+        d3.select("#p-prediction").text(response.label);
+        d3.select("#result-prediction").style('--color', classColor[response.pred]);
+
+        d3.select("#p-age").text(response.age);
+        d3.select("#p-sex").text(response.sex);
+
+
+        if (response.sex == "Men"){
+            d3.select("#i-sex").attr("class", "fa fa-person");
+        }else{
+            d3.select("#i-sex").attr("class", "fa fa-person-dress");
+        }
+
+        console.log(response)
+    })
     .catch((error) => {
         console.error('Error:', error);
     })
     .finally(() => {
         fetchDataAndInitialize(); // Re load data
-        d3.select('#loader').style('display', 'none');
-        d3.selectAll('.modal').classed("show", false);
-        showNotification('Yay! 🎉 Your data has been uploaded successfully!');
+        resetUploadLabel(); // Set original text for lable Upload
     });
 });
 
 // Function to update selected for newdots
-function update_nearby(id, selected, selected_id){
+function updateNearby(id, selected, selected_id){
     fetch('/update_nearby', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json'},
@@ -90,8 +88,7 @@ function update_nearby(id, selected, selected_id){
     })
     .then(response => response.json())
     .then(response => {
-        d3.selectAll("#nearby3 .ecg").remove();
-        d3.selectAll('.send-to-container').classed("show", false);
+        clearSignalBlock(3);
     })
     .catch((error) => {console.log('Error:', error);})
     .finally(() => {
@@ -102,3 +99,10 @@ function update_nearby(id, selected, selected_id){
 }
 
 
+document.getElementById('go-explore').addEventListener('click', () => {
+    d3.select('.modal').classed("show", false);
+    d3.select('#result-container').style("display", "none");
+    d3.select('#form-container').style("display", "flex");
+    // d3.select('#form-container').style('display', 'flex');
+    showNotification('Yay! 🎉 Your data has been uploaded successfully!');
+});

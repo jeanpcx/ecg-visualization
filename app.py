@@ -31,11 +31,12 @@ class Meta(db.Model):
     _id = Column(Integer, Sequence('meta_id_seq'), primary_key=True, autoincrement=True)
     age = Column(Integer, nullable=True)
     sex = Column(String(10), nullable=True)
+    true_ = Column(Integer, nullable=True)
+    true_label = Column(String(10), nullable=True)
     pred = Column(Integer, nullable=True)
+    pred_label = Column(String(10), nullable=True)
     x = Column(Float, nullable=True)
     y = Column(Float, nullable=True)
-    cluster = Column(Integer, nullable=True)
-    label = Column(String(10), nullable=True)
     selected_1 = Column(Integer, nullable=True)
     selected_2 = Column(Integer, nullable=True)
 
@@ -55,13 +56,13 @@ def get_data():
     subquery = db.session.query(
         Meta,
         func.row_number().over(
-            partition_by=Meta.cluster,
-            order_by=Meta._id
+            partition_by = Meta.true_,
+            order_by = Meta._id
         ).label('row_num')
     ).subquery()#.filter(Meta.cluster.isnot(None)).subquery()
 
     # Get n records
-    query = db.session.query(subquery).filter(subquery.c.row_num <= 500)
+    query = db.session.query(subquery).filter(subquery.c.row_num <= 100)
     result = query.all()
 
     json = [dict(row._mapping) for row in result]
@@ -83,13 +84,13 @@ def get_nearby(id, filter_ids, n = 2):
     embeddings = {key: embeddings_dict[key] for key in filter_ids if key != id}
 
     # Find 2 nearby embeddings
-    embedding_ids = np.array(list(embeddings.keys())) # Vectorized operations
+    embedding_ids = np.array(list(embeddings.keys()))
     embedding_values = np.array(list(embeddings.values()))
     dists = np.linalg.norm(embedding_values - target, axis = 1)
-    closest_indices = np.argpartition(dists, 2)[:n]
-    closest_ids = embedding_ids[closest_indices].tolist()
+    nearest_indices = np.argpartition(dists, 2)[:n]
+    nearest_ids = embedding_ids[nearest_indices].tolist()
 
-    return closest_ids
+    return nearest_ids
 
 def get_signal(ids):
     if not ids:
@@ -120,8 +121,8 @@ def get_signals():
     filter_ids = content['filterIds']
 
     # Found get nearby ids
-    nearby_ids = get_nearby(id, filter_ids)
-    nearby_ids.insert(0, id)
+    nearest_ids = get_nearby(id, filter_ids)
+    nearest_ids.insert(0, id)
 
     # Get target info
     meta_target = db.session.query(Meta).filter(Meta._id == id).first()
@@ -129,27 +130,27 @@ def get_signals():
         return jsonify({'message': 'Record not found'}), 404
 
     selected_ids = None
-    nearby1 = meta_target.selected_1
-    nearby2 = meta_target.selected_2
+    selected_1 = meta_target.selected_1
+    selected_2 = meta_target.selected_2
 
-    if nearby1 and nearby2:
+    if selected_1 and selected_2:
         # User select two points
-        selected_ids = [nearby1, nearby2]
-    elif nearby1:
-        # User select only nearby1
-        selected_ids = [nearby1, nearby_ids[2]]
-    elif nearby2:
-        # User select only nearby2
-        selected_ids = [nearby_ids[1], nearby2]
+        selected_ids = [selected_1, selected_2]
+    elif selected_1:
+        # User select only selected_1
+        selected_ids = [selected_1, nearest_ids[2]]
+    elif selected_2:
+        # User select only selected_2
+        selected_ids = [nearest_ids[1], selected_2]
 
     # If user select any point, so graph
     if selected_ids:
         selected_ids.insert(0, id)
         signals = get_signal(selected_ids)
     else:
-        signals = get_signal(nearby_ids)
+        signals = get_signal(nearest_ids)
     
-    return jsonify({"nearbyIDs": nearby_ids, "selectedIds": selected_ids, "signal": signals})
+    return jsonify({"nearbyIDs": nearest_ids, "selectedIds": selected_ids, "signal": signals})
 
 @app.route('/examine_signal', methods=['POST'])
 def examine_signal():
@@ -180,12 +181,14 @@ def upload_file():
     except Exception as e:
         return jsonify({'message': 'Failed to read CSV file', 'error': str(e)}), 400
 
+    # Attempt to get embedding and prediction
     try:
         x, signal = loader_data(df)  # Transform df to send to model, also get the signal
-        embedding, prediction = get_embedding(x)  # Evaluate in model
+        embedding, prediction, label = get_embedding(x)  # Evaluate in model
     except Exception as e:
         return jsonify({'message': 'Error loading data and get embedding', 'error': str(e)}), 500
 
+    # Attempt to get the 2d projection
     try:
         umap = get_umap(embedding)
     except Exception as e:
@@ -195,25 +198,30 @@ def upload_file():
     if isinstance(embedding, np.ndarray):
         embedding = embedding.tolist()
 
+    # Attempt to POST to DB
     try:
         # Create documents
         new_signal = Signal(signal=signal, embedding=embedding)
-        new_data = Meta(age=age, sex=sex, pred=int(prediction), x=float(umap[0][0]), y=float(umap[0][1]))
+        new_data = Meta(age = age, sex = sex,
+                        pred = int(prediction),pred_label = label,
+                        x =float(umap[0][0]), y =float(umap[0][1]))
         
         db.session.add(new_signal)
         db.session.add(new_data)
-        db.session.commit()  # Send and update database
+        db.session.commit()
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Database error', 'error': str(e)}), 500
 
-    # Reload embeddings with updated
+    # Attempt to reload embeddings with updated
     try:
         load_embeddings()
     except Exception as e:
         return jsonify({'message': 'Failed to reload embeddings', 'error': str(e)}), 500
-
-    return jsonify({'message': 'Data uploaded successfully!'}), 200
+    
+    print(age, sex, prediction, label, umap)
+    # return jsonify({'message': 'Data uploaded successfully!'}), 200
+    return jsonify({"age": age, "sex": sex, "pred": int(prediction), "label": label}), 200
 
 @app.route('/update_nearby', methods=['POST'])
 def update_nearby():
@@ -227,10 +235,10 @@ def update_nearby():
     if meta_record:
         if id_nearby is not None:
             if (i == "1"):
-                # Save in nearby1
+                # Save in selected_1
                 meta_record.selected_1 = id_nearby
             else:
-                # Save in nearby2
+                # Save in selected_2
                 meta_record.selected_2 = id_nearby
 
         db.session.commit()
@@ -238,7 +246,7 @@ def update_nearby():
     else:
         return jsonify({'message': 'Record not found'}), 404
 
-# PRELoad Embeddings
+# pre-load embeddings
 load_embeddings()
 if __name__ == '__main__':
     app.run(debug=True)

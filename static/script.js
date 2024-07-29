@@ -1,174 +1,210 @@
-// window.addEventListener('resize', resizeSVGs);
+// Define colors
+const classLabel = ['NORM', 'MI', 'STTC', 'CD', 'HYP'];
+const classColor = ["gray", "blue", "darkorange", "green", "purple", "#03305A"];
+const nearbyColor = ["#03305A", 'darkred', 'lightsalmon', 'orangered'];
 
-var scatterZone = document.getElementById('scatter-zone');
+// Initialize Zooms
+var currentZoomScatter = d3.zoomIdentity;
+var currentZoomSignal = d3.zoomIdentity;
+
+// Initialize Scatter Plot
+const scatterZone = document.getElementById('scatter-zone');
 var scatterRect = scatterZone.getBoundingClientRect();
 
-// Define clusters names and colors
-const clusterLabels = ["NORM", "MI", "STTC", "CD", "HYP"];
-var cluster_color = ["gray", "blue", "darkorange", "green", "purple", "#03305A"]
-// var cluster_color = ["gray", "#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#03305A"]
-const nearby_colors = ["#03305A", 'gold', 'darkorchid', 'orangered']
+    // Define global dimensions and safe zone for Scatter Plot
+var scatterWidth = scatterZone.clientWidth;
+var scatterHeight = scatterZone.clientHeight;
+const scatterMargin = { top: 20, right: 20, bottom: 20, left: 20 };
+var graphWidth = scatterWidth - scatterMargin.left - scatterMargin.right;
+var graphHeight = scatterHeight - scatterMargin.top - scatterMargin.bottom;
 
-function clear_examine(){
-    d3.selectAll(".dot").classed("examine", false);
-    d3.selectAll("#nearby3 .ecg").remove();
+    // Define axes x and y
+const scatterX = d3.scaleLinear().range([0, graphWidth]);
+const scatterY = d3.scaleLinear().range([graphHeight, 0]);
+
+// Initialize Signal dimensions
+const signalMargin = { top: 10, right: 15, bottom: 25, left: 40 };
+let signalX = d3.scaleLinear().domain([0, 1000]);
+let signalY = d3.scaleLinear().domain([-1, 1]);
+
+// Initialize minimap dimensions
+const mapWidth = 80;
+const mapHeight = 80;
+const mapSVG = d3.select("#minimap")
+                .attr("width", mapWidth)
+                .attr("height", mapHeight);
+const mapX = d3.scaleLinear().range([0, mapWidth]);
+const mapY = d3.scaleLinear().range([mapHeight, 0]);
+const mapGroup = mapSVG.append("g");
+const mapContainer = d3.select("#minimap-container")
+                .style("left", scatterRect.left + "px")
+                .style("top", scatterRect.top + scatterRect.height - mapHeight+ "px");
+
+
+var isMiniMapInitialized = false
+function showMap(data, newData) {
+    const dots = mapGroup.selectAll(".fix").data(data, d => d._id);
+    dots.exit().remove();
+    dots.attr("cx", d => mapX(d.x))
+        .attr("cy", d => mapY(d.y))
+        .style("fill", d => classColor[d.true_]);
+
+    // Add new points
+    dots.enter().append("circle")
+        .attr("class", "dot fix")
+        .attr("r", 0.8)
+        .attr("cx", d => mapX(d.x))
+        .attr("cy", d => mapY(d.y))
+        .style("fill", d => classColor[d.true_])
+
+    // Add dots to the minimap
+    mapGroup.selectAll(".new-dot")
+        .data(newData)
+        .enter().append("circle")
+        .attr("class", "dot new-dot")
+        .attr("r", 1.5)
+        .attr("cx", d => mapX(d.x))
+        .attr("cy", d => mapY(d.y))
+        .style("fill", "red");
+
+    if (isMiniMapInitialized) return;
+
+    // Create a rectangle to show the current zoom area
+    const viewRect = mapGroup.append("rect")
+        .attr("class", "viewRect")
+        .attr("width", mapWidth)
+        .attr("height", mapHeight)
+        .style("fill", "none")
+        .style("stroke", "red");
+
+    isMiniMapInitialized = true
 }
 
-// Define global dimensions and safe zones
-const pageWidth = document.body.clientWidth;
-const pageHeight = document.body.clientHeight;
-const centerX = (pageWidth) * 0.25;
-const centerY = (pageHeight) * 0.5;
-const container = document.getElementById('scatter-zone');
-var width = container.clientWidth;
-var height = container.clientHeight;
-const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-const margin_signal = { top: 10, right: 15, bottom: 25, left: 40 };
-var graphWidth = width - margin.left - margin.right;
-var graphHeight = height - margin.top - margin.bottom;
-let x_signal = d3.scaleLinear().domain([0, 1000]);
-let y_signal = d3.scaleLinear().domain([-1, 1]);
+// Display notification
+function showNotification(text, type = "check") {
+    const iconElement = document.getElementById('icon-message');
+    const notificationElement = document.getElementById('notification');
 
-// Define dimensions for the minimap
-const minimapWidth = 150;
-const minimapHeight = 150;
-const minimapSvg = d3.select("#minimap")
-.attr("width", minimapWidth)
-.attr("height", minimapHeight);
+    switch (type) {
+        case 'check':
+            iconElement.className = 'fa fa-check-circle';
+            d3.select('#notification').classed("warning", false);
+            d3.select('#notification').classed("alert", false);
+            break;
+        case 'warning':
+            iconElement.className = 'fa fa-exclamation-circle';
+            d3.select('#notification').classed("warning", true);
+            break;
+        case 'alert':
+            iconElement.className = 'fa fa-cogs';
+            d3.select('#notification').classed("alert", true);
+            break;
+    }
 
-const minimapG = minimapSvg.append("g");
-const minimapX = d3.scaleLinear().range([0, minimapWidth]);
-const minimapY = d3.scaleLinear().range([minimapHeight, 0]);
+    d3.select("#text-not").text(text);
+    d3.select("#notification").classed("show", true);
+    setTimeout(function() {
+        d3.select("#notification").classed("show", false);
+    }, 8000);
+}
 
+// Initialize ToolTip
 const tooltip = d3.select('.tooltip');
 
-// Define Zoom behavior for scatter plot
-let currentZoomState = d3.zoomIdentity;
-let currentZoomECG = d3.zoomIdentity;
-var zoom = d3.zoom()
-    .scaleExtent([1, 30])
-    .translateExtent([[0, 0], [width, height]])
-    .on("zoom", function(event) {
-        currentZoomState = event.transform;
-        applyZoomTransform(event.transform);
-        updateMinimap(event.transform);
-    });
+    // Define function to show or hide
+function showTooltip(d, state = true){
+    if (state) {
+        // If is a new signal upload, only have prediction
+        if (d.true_ === null) {
+            var label = "Pred: " + d.pred_label;
+            var color = classColor[d.pred];
+        } else {
+            // If signal have a true Dx
+            var label = d.true_label;    
+            var color = classColor[d.true_];
+        }
 
-function applyZoomTransform(transform) {
-    var new_x = transform.rescaleX(x);
-    var new_y = transform.rescaleY(y);
-
-    d3.select("#scatter-plot .x.axis").call(d3.axisBottom(new_x));
-    d3.select("#scatter-plot .y.axis").call(d3.axisLeft(new_y));
-
-    d3.selectAll("#scatter-plot .dot")
-        .attr("cx", d => new_x(d.x))
-        .attr("cy", d => new_y(d.y));
+        tooltip.classed("show", true)
+            .html(d._id + "<br/><strong style='color:" + color + "'>" + label + "</strong><br/>" + d.age + " years <br/>" + d.sex)
+            .style("left", scatterRect.left + "px")
+            .style("top", scatterRect.top + "px")
+            .style("--color", color);
+    }else{
+        tooltip.classed("show", false);
+    }
 }
 
-// function zoomToPoint(d) {
-//     const pointX = x(d.x);
-//     const pointY = y(d.y);
-//     const scale = currentZoomState.k * 2;
+// Define zoom behavior for Scatter Plot
+var scatterZoom = d3.zoom()
+    .scaleExtent([1, 30])
+    .translateExtent([[0, 0], [scatterWidth, scatterHeight]])
+    .on("zoom", function(event) {
+        currentZoomScatter = event.transform;
+        applyZoomScatter(currentZoomScatter);
+        applyZoomMap(currentZoomScatter);
+    });
+    
+    // Define zoom transform for Scatter Plot
+function applyZoomScatter(transform) {
+    let x = transform.rescaleX(scatterX);
+    let y = transform.rescaleY(scatterY);
 
-//     const translateX = width / 2 - pointX * scale;
-//     const translateY = height / 2 - pointY * scale;
+    d3.select("#scatter-plot .x.axis").call(d3.axisBottom(x));
+    d3.select("#scatter-plot .y.axis").call(d3.axisLeft(y));
+    d3.selectAll("#scatter-plot .dot").attr("cx", d => x(d.x)).attr("cy", d => y(d.y));
+}
 
-//     const transform = d3.zoomIdentity
-//         .translate(translateX, translateY)
-//         .scale(scale);
-
-//     svg.transition().duration(900).call(zoom.transform, transform);
-// }  
-
-// // Function to get color for hover buttons
-// function adjustSaturation(colorHex, targetSaturation) {
-//     let originalColor = chroma(colorHex);
-//     let adjustedColor = originalColor.set('hsv.s', targetSaturation);
-//     return adjustedColor.hex();
-// }
-
-// // Function to resize when window is resized
-// function resizeSVGs() {
-//     var newWidth = container.clientWidth;
-//     var newHeight = container.clientHeight;
-
-//     d3.select("#scatter-plot svg")
-//         .attr("width", newWidth)
-//         .attr("height", newHeight);
-
-//     x.range([0, newWidth - margin.left - margin.right]);
-//     y.range([newHeight - margin.top - margin.bottom, 0]);
-
-//     svg.selectAll(".dot")
-//         .attr("cx", d => x(d.x))
-//         .attr("cy", d => y(d.y));
-
-//     svg.call(zoom.transform, currentZoomState); // Reapply current zoom state after resize
-// }
-
-// Function to update the minimap when the main plot is zoomed
-function updateMinimap(transform) {
-    const scaleX = minimapWidth / (graphWidth * transform.k);
-    const scaleY = minimapHeight / (graphHeight * transform.k);
-
+// Define zoom behavior for MiniMap
+function applyZoomMap(transform) {
+    const scaleX = mapWidth / (graphWidth * transform.k);
+    const scaleY = mapHeight / (graphHeight * transform.k);
     const translateX = -transform.x * scaleX;
     const translateY = -transform.y * scaleY;
 
-    d3.select('.viewRect').attr("x", translateX)
-        .attr("y", translateY)
-        .attr("width", minimapWidth / transform.k)
-        .attr("height", minimapHeight / transform.k);
-
+    d3.select('.viewRect').attr("x", translateX).attr("y", translateY)
+        .attr("width", mapWidth / transform.k)
+        .attr("height", mapHeight / transform.k);
 }
 
-// Create SVG container for scatter plot
-const svg = d3.select("#scatter-plot")
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .call(zoom)
-    .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+// Initialize SVG container for scatter plot
+const scatterSVG = d3.select("#scatter-plot")
+    .append("svg").attr("id", "plotdot")
+    .attr("width", scatterWidth).attr("height", scatterHeight)
+    .call(scatterZoom)
+    .append("g").attr("transform", "translate(" + scatterMargin.left + "," + scatterMargin.top + ")");
 
-svg.append("rect")
-    .attr("width", width)
-    .attr("height", height)
+scatterSVG.append("rect")
+    .attr("width", scatterWidth).attr("height", scatterHeight)
     .style("fill", "none")
     .style("pointer-events", "all")
-    .on("click", function () {
-        d3.selectAll('.send-to-container').classed("show", false);
-        clearECGDisplays();
-    });
+    .on("click", function () {clearECGDisplays();});
 
-// Define axes x and y
-const x = d3.scaleLinear().range([0, graphWidth]);
-const y = d3.scaleLinear().range([graphHeight, 0]);
-
-// Function to clear ECG displays
+// Define function to clear ECG displays
 function clearECGDisplays() {
-    d3.selectAll(".ecg").remove();
+
+    clearSignalBlock(0);
+    clearSignalBlock(1);
+    clearSignalBlock(2);
+    clearSignalBlock(3);
+
+
+
+    // d3.selectAll(".ecg").remove();
     d3.selectAll(".dot.selected").classed("selected", false);
     d3.selectAll(".dot").classed("nearby1", false);
     d3.selectAll(".dot").classed("nearby2", false);
     d3.selectAll(".dot").classed("find-nearby1", false);
     d3.selectAll(".dot").classed("find-nearby2", false);
     d3.selectAll(".dot").classed("examine", false);
-
-    // d3.selectAll(".ecg-content").classed("graph", false);
-    // d3.selectAll("#noneECG").style("display", 'block');
+    d3.selectAll('.send-to-container').classed("show", false);
 }
 
-
-// Function to create age slider
-function create_sliders(min_age, max_age){
+// Define function to create age slider
+function createSliders(min_age, max_age){
     var ageSlider = document.getElementById('age-slider');
 
     // Check if the slider is already initialized
-    if (ageSlider.noUiSlider) {
-        console.log("Slider is already initialized. Skipping initialization.");
-        return ageSlider;
-    }
+    if (ageSlider.noUiSlider) return ageSlider;
 
     // Create slider
     noUiSlider.create(ageSlider, {
@@ -186,94 +222,66 @@ function create_sliders(min_age, max_age){
     return ageSlider // Return the d3 object
 }
 
-// Function to create buttons
+// Define function to create buttons
 var isButtonsInitialized = false
-function create_buttons(clusters){
+function createButtons(classes){
+    // Check if class butoms is already initialized
+    if (isButtonsInitialized) return;    
     const buttonContainer = d3.select("#button-container");
-
-    if (isButtonsInitialized){
-        console.log('Buttons are already initialized. Skipping initialization.')
-        return;
-    }
-
-    // Button for All
+    
+    // Button for all, and set as selected
     buttonContainer.append("button")
-        .attr("class", "button cluster-button selected")
-        .attr("data-cluster", clusters.length)
+        .attr("class", "button class-button selected")
+        .attr("data-class", classes.length)
         .text("All")
-        .style('--cluster-color', cluster_color[clusters.length]);
+        .style('--color', classColor[classes.length]);
 
-    // Button for each cluster
-    clusters.forEach(cluster => {
+    // Button for each class
+    classes.forEach(clas => {
         buttonContainer.append("button")
-            .attr("class", "button cluster-button selected")
-            .attr("data-cluster", cluster)
-            .text(clusterLabels[cluster])
-            .style('--cluster-color', cluster_color[cluster]);
+            .attr("class", "button class-button selected")
+            .attr("data-class", clas)
+            .text(classLabel[clas])
+            .style('--color', classColor[clas]);
     });
     isButtonsInitialized = true
 }
 
-// Function to get parameters amd filter data
-function get_filter(data){
-    var sex = d3.select(".fa.selected").attr("data-sex");
-    var selectedClusters = d3.selectAll(".cluster-button.selected")
-        .nodes()
-        .map(button => button.getAttribute("data-cluster"));
+// Define function to get parameters amd filter data
+function getFilter(data){
+    const sex = d3.select(".fa.selected").attr("data-sex");
+    const ageRange = document.getElementById('age-slider').noUiSlider.get();
+    let selectedClasses = d3.selectAll(".class-button.selected")
+        .nodes().map(button => button.getAttribute("data-class"));
 
-    if (selectedClusters.length === 0) {
-        return [];
+    // If no class is selected
+    if (selectedClasses.length === 0) return [];
+
+    // If all buttom is selected, remove '5'
+    if (selectedClasses.includes("5")) {
+        selectedClasses = selectedClasses.slice(1);
     }
 
-    if (selectedClusters.includes("5")) {
-        selectedClusters = selectedClusters.slice(1);
-    }
-
-    var age_values = document.getElementById('age-slider').noUiSlider.get();
-    var min = parseFloat(age_values[0]);
-    var max = parseFloat(age_values[1]);
-
-    let filtered_data = data.filter(d => {
-        return (selectedClusters.includes(d.cluster.toString())) &&
+    // Filter data
+    const filtered_data = data.filter(d => {
+        let clas = d.true_
+        return (selectedClasses.includes(clas.toString())) &&
                (sex === "ALL" || d.sex === sex) &&
-               (d.age >= min && d.age <= max);
+               (d.age >= ageRange[0] && d.age <= ageRange[1]);
     });
 
     return filtered_data
 }
 
-// Function to manage tooltip state
-function show_tooltip(d, state = true){
-    if (state) {
-
-        if (d.cluster === null) {
-            var label = "Pred: " + clusterLabels[d.pred];
-            var color = cluster_color[d.pred]
-        } else {
-            var label = clusterLabels[d.cluster];    
-            var color = cluster_color[d.cluster]
-        }
-
-        // var tooltipX = event.pageX;
-        // var tooltipY = event.pageY;
-        tooltip.classed("show", true)
-            .html(d._id + "<br/><strong style='color:" + color + "'>" + label + "</strong><br/>" + d.age + " years <br/>" + (d.sex === "Hombre" ? "Men" : "Women"))
-            .style("left", scatterRect.left + "px")
-            .style("top", scatterRect.top + "px")
-            .style("--cluster-color", cluster_color[d.cluster]);
-    }else{
-        tooltip.classed("show", false);
-    }
-}
-
-function normalize_signal(data) {
+//  Define functions to plot a signal
+function normalizeSignal(data) {
     const maxVal = d3.max(data);
     const minVal = d3.min(data);
     return data.map(d => 2 * (d - minVal) / (maxVal - minVal) - 1);
 }
 
-function smooth_signal(data, windowSize) {
-    data = normalize_signal(data);
+function smoothSignal(data, windowSize) {
+    data = normalizeSignal(data);
     return data.map((entry, index, array) => {
         const start = Math.max(0, index - windowSize);
         const end = Math.min(array.length, index + windowSize + 1);
@@ -283,111 +291,122 @@ function smooth_signal(data, windowSize) {
     });
 }
 
-function draw_signal(d, signal, container_id=0){
-    const container = d3.select("#nearby"+container_id);
-    container.classed('graph', true);
+function clearSignalBlock(id){
+    const container = d3.select("#nearby" + id);
+    container.select('.ecg-header').select('.ecg-info').selectAll('*').remove();
+    container.select('.ecg').select(".ecg-plot").selectAll('*').remove();
+    container.select('.ecg').style('--color', 'gray');
+    if(id==3){
+        d3.select("#ecg-inspect").classed('show', false);
+    }
+}
 
-    const signal_zone = container.append("div").attr("class", "ecg").attr("id", "ecg-" + d._id);
-    const signal_plot = signal_zone.append("div").attr("class", "ecg-plot");
-    const signal_info = signal_zone.append("div").attr("class", "ecg-info");
+function plotSignal(d, signal, containerId = 0){
+    const container = d3.select("#nearby" + containerId);
 
-    colorNearby = (container_id == 0) ? cluster_color[d.cluster] : nearby_colors[container_id];
+    // Get blocks for signal and info
+    const signalZone = container.select('.ecg');
+    const signalInfo = container.select('.ecg-header').select('.ecg-info');
+    const signalPlot = signalZone.select(".ecg-plot");
 
-    if (d.cluster === null) {
-        console.log('d.cluster es undefined');
-        signal_info.append("div").attr("class", "info-block")
-        .html(`<p style="color:white;">Pred: ${clusterLabels[d.pred]}</p>`)
-        .style("background-color", cluster_color[0])
+    
+    // Define color for margin, if is the selected point: same as class
+    var marginColor = (containerId == 0) ? classColor[d.true_] : nearbyColor[containerId];
+
+    // Check if is a new signal (Only prediction), display PRED:
+    if (d.true_ === null) {
+        signalInfo.append("div").attr("class", "info-block")
+        .html(`<p style="color:white;">Pred: ${d.pred_label}</p>`)
+        .style("background-color", classColor[d.pred])
         .style("color", "white");
-        colorNearby = cluster_color[d.pred]
+        marginColor = classColor[d.pred];
     } else {
-        signal_info.append("div").attr("class", "info-block")
-        .html(`<p style="color:white;">${d.label}</p>`)
-        .style("background-color", cluster_color[d.cluster])
+        signalInfo.append("div").attr("class", "info-block")
+        .html(`<p style="color:white;">${d.true_label}</p>`)
+        .style("background-color", classColor[d.true_])
         .style("color", "white");
     }
-
-    signal_zone.style("--fill", colorNearby)
-    signal_info.append("div").attr("class", "info-block").html(`<p>${(d.sex === "Hombre" ? "Men" : "Women")}</p>`);
-    signal_info.append("div").attr("class", "info-block").html(`<p>${d.age} years</p>`);
+    signalInfo.append("div").attr("class", "info-block").html(`<p>${d.sex}</p>`);
+    signalInfo.append("div").attr("class", "info-block").html(`<p>${d.age} years</p>`);
+    signalZone.style("--color", marginColor);
 
     // Get local dimensions
-    const plot = document.getElementsByClassName('ecg-plot')[0];
-    var width_signal = plot.clientWidth;
-    var height_signal = 120;
-
-    var graphWidth_signal = width_signal - margin_signal.left - margin_signal.right;
-    var graphHeight_signal = height_signal - margin_signal.top - margin_signal.bottom;
+    var signalWidth = signalPlot.node().clientWidth;
+    var signalHeight = signalPlot.node().clientHeight;
+    var graphWidthSignal = signalWidth - signalMargin.left - signalMargin.right;
+    var graphHeightSignal = signalHeight - signalMargin.top - signalMargin.bottom;
 
     // Create SVG for ECG
-    const svg = signal_plot.append("svg")
-        .attr("width", width_signal)
-        .attr("height", height_signal)
+    const signalSVG = signalPlot.append("svg")
+        .attr("width", signalWidth)
+        .attr("height", signalHeight)
         .append("g")
-        .attr("transform", "translate(" + margin_signal.left + "," + margin_signal.top + ")");
+        .attr("transform", "translate(" + signalMargin.left + "," + signalMargin.top + ")");
 
     // Define clip path
-    svg.append("defs").append("clipPath")
+    signalSVG.append("defs").append("clipPath")
         .attr("id", "clip-" + d._id)
         .append("rect")
-        .attr("width", graphWidth_signal)
-        .attr("height", height_signal);
+        .attr("width", graphWidthSignal)
+        .attr("height", signalHeight);
 
-    const g = svg.append("g").attr("clip-path", "url(#clip-" + d._id + ")");
+    const signalGroup = signalSVG.append("g").attr("clip-path", "url(#clip-" + d._id + ")");
 
-    svg.append("rect")
-        .attr("width", graphWidth_signal)
-        .attr("height", height_signal)
+    signalGroup.append("rect")
+        .attr("width", graphWidthSignal)
+        .attr("height", signalHeight)
         .style("fill", "none")
         .style("pointer-events", "all")
-        .call(d3.zoom()
-            .scaleExtent([1, 10])
-            .translateExtent([[0, 0], [graphWidth_signal, graphHeight_signal]])
-            .extent([[0, 0], [graphWidth_signal, graphHeight_signal]])
-            .on("zoom", (event) => {
-                signal_zoom(event.transform);
-            }));
+
+    if (containerId == 0){
+        signalGroup.call(d3.zoom()
+        .scaleExtent([1, 10])
+        .translateExtent([[0, 0], [graphWidthSignal, graphHeightSignal]])
+        .extent([[0, 0], [graphWidthSignal, graphHeightSignal]])
+        .on("zoom", (event) => {
+            currentZoomSignal = event.transform;
+            applyZoomSignal(currentZoomSignal);
+        }));
+    }
+        
 
     // Define axes for ECG
-    x_signal.range([0, graphWidth_signal]);
-    y_signal.range([graphHeight_signal, 0]);
+    signalX.range([0, graphWidthSignal]);
+    signalY.range([graphHeightSignal, 0]);
 
-    // Draw Signal: First lead.
-    const smoothed_signal = normalize_signal(signal, 5);
-    g.append("path")
-        .datum(smoothed_signal)
+    // Draw Signal: First lead and x axis
+    const smoothedSignal = smoothSignal(signal, 5);
+    signalGroup.append("path")
+        .datum(smoothedSignal)
         .attr("class", "line")
-        .attr("d", d3.line().x((d, i) => x_signal(i)).y(d => y_signal(d)));
+        .attr("d", d3.line().x((d, i) => signalX(i)).y(d => signalY(d)));
 
-    g.append("g")
+        signalGroup.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + graphHeight_signal + ")")
-        .call(d3.axisBottom(x_signal));
-
-    svg.append("g")
+        .attr("transform", "translate(0," + graphHeightSignal + ")")
+        .call(d3.axisBottom(signalX));
+    // Draw y axis
+    signalSVG.append("g")
         .attr("class", "y axis")
-        .call(d3.axisLeft(y_signal));
+        .call(d3.axisLeft(signalY));
 
-    function signal_zoom(transform) {
-        currentZoomECG = transform
-
+    function applyZoomSignal(transform) {
         d3.selectAll(".ecg").each(function () {
             const svg = d3.select(this);
-
-            x_signal.range([0, graphWidth_signal]);
-            const xz = transform.rescaleX(x_signal);
+            signalX.range([0, graphWidthSignal]);
+            const x = transform.rescaleX(signalX);
             
-            svg.select(".x.axis").call(d3.axisBottom(xz));
+            svg.select(".x.axis").call(d3.axisBottom(x));
             svg.select(".line").attr("d", d3.line()
-                .x((d, i) => xz(i))
-                .y(d => y_signal(d))
+                .x((d, i) => x(i))
+                .y(d => signalY(d))
             );
         });
     }
 }
 
 // Function to get signal from data, and graph
-function show_signal(d, filter, renderSelected = true) {
+function getSignal(d, filter, renderSelected = true) {
     let filterIds = filter.map(d => d._id)
     fetch('/get_signals', {
         method: 'POST',
@@ -403,8 +422,8 @@ function show_signal(d, filter, renderSelected = true) {
             var ids = nearbyIDs
 
             if (renderSelected){
-                d3.selectAll("#nearby0 .ecg").remove();
-                draw_signal(d, signals[0]);
+                clearSignalBlock(0);
+                plotSignal(d, signals[0]);
             }
 
             if (signals.length > 1){
@@ -412,11 +431,10 @@ function show_signal(d, filter, renderSelected = true) {
                 d3.selectAll(".dot").classed("nearby2", false);
                 d3.selectAll(".dot").classed("find-nearby1", false);
                 d3.selectAll(".dot").classed("find-nearby2", false);
-                d3.selectAll("#nearby1 .ecg").remove();
-                d3.selectAll("#nearby2 .ecg").remove();
-                d3.selectAll("#nearby3 .ecg").remove();
+                
                 d3.selectAll('.send-to-container').classed("show", false);
 
+                // Show recommends points
                 if (selectedIds != null){
                     d3.select("#dot-" + ids[1]).classed("find-nearby1", true); // Select new nearby
                     d3.select("#dot-" + ids[2]).classed("find-nearby2", true); // Select new nearby                  
@@ -424,12 +442,13 @@ function show_signal(d, filter, renderSelected = true) {
                 }
 
                 for (let i = 1; i < signals.length; i++) {
+                    clearSignalBlock(i);
                     id = ids[i]
                     d3.select("#dot-" + id).classed("nearby" + i, true); // Select new nearby
                     d = filter.find(record => record._id === id);
                     
                     if (d){
-                        draw_signal(d, signals[i], i);
+                        plotSignal(d, signals[i], i);
                     }else{
                         showNotification('Oopsie! 😅 The nearest ' + i + ' point isnt within the filters', 'warning')
                     }
@@ -441,7 +460,7 @@ function show_signal(d, filter, renderSelected = true) {
         });
 }
 
-function examine_signal(d){
+function examineSignal(d){
     fetch('/examine_signal', {
         // Send id of selected point to examine
         method: 'POST',
@@ -450,11 +469,9 @@ function examine_signal(d){
     })
         .then(response => response.json())
         .then(signal => {
-            // Clean div and draw the return signal
-            d3.selectAll("#nearby3 .ecg").remove();
-            d3.selectAll("#nearby3").style("display", 'flex');
-            d3.selectAll('.send-to-container').classed("show", true);
-            draw_signal(d, signal, 3);
+            clearSignalBlock(3);
+            d3.selectAll('#ecg-inspect').classed("show", true);
+            plotSignal(d, signal, 3);
         })
         .catch((error) => {
             console.log('Error:', error);
@@ -463,16 +480,16 @@ function examine_signal(d){
 
 function checkSelected(filteredData){
     // Check if any point is selected
-    const selected_dot = d3.select(".dot.selected");
-    if (selected_dot.empty()) {
+    const selectedDot = d3.select(".dot.selected");
+    if (selectedDot.empty()) {
         clearECGDisplays();
     } else {
-        const element = selected_dot.node();
-        const data = selected_dot.data()[0];
+        const element = selectedDot.node();
+        const data = selectedDot.data()[0];
         
         // Check if selected point is still in filtered data or if selected point if new.
         if (element.classList.contains('new-dot') || filteredData.some(d => d._id === data._id)) {
-            show_signal(data, filteredData, false);
+            getSignal(data, filteredData, false);
         } else {
             showNotification('Oops! 🤔 Dot not found. Adjust your filter and try again.', 'warning');
             clearECGDisplays();
@@ -480,120 +497,91 @@ function checkSelected(filteredData){
     }
 }
 
-function update(data, data_new) {
-    let filtered_data = get_filter(data);
+function update(data, newData) {
+    var filteredData = getFilter(data);
 
      // Check if any cluster is selected
-    if (filtered_data.length === 0) {
+    if (filteredData.length === 0) {
         clearECGDisplays();
-        svg.selectAll(".fix-dot").remove();
-        // d3.select("#scatter-plot").style("display", "none");
+        scatterSVG.selectAll(".fix-dot").remove();
+        mapSVG.selectAll(".fix").remove();
         return;
     }
 
-    checkSelected(filtered_data);
-    showMiniMap(filtered_data, data_new);
+    checkSelected(filteredData);
+    showMap(filteredData, newData);
 
-    const dots = svg.selectAll(".fix-dot").data(filtered_data, d => d._id);
+    const dots = scatterSVG.selectAll(".fix-dot").data(filteredData, d => d._id);
     dots.exit().remove();
-    dots.attr("cx", d => x(d.x))
-        .attr("cy", d => y(d.y))
-        .style("fill", d => cluster_color[d.cluster]);
+    dots.attr("cx", d => scatterX(d.x))
+        .attr("cy", d => scatterY(d.y))
+        .style("fill", d => classColor[d.true_]);
 
     // Add new points
     dots.enter().append("circle")
         .attr("class", "dot fix-dot")
         .attr("r", 3)
-        .attr("cx", d => x(d.x))
-        .attr("cy", d => y(d.y))
+        .attr("cx", d => scatterX(d.x))
+        .attr("cy", d => scatterY(d.y))
         .attr("id", d => "dot-" + d._id)
-        .style("fill", d => cluster_color[d.cluster])
-        .on("mouseover", function (event, d) {
-            show_tooltip(d);
-        })
-        .on("mouseout", function (event, d) {
-            show_tooltip(null, false);
-        })
+        .style("fill", d => classColor[d.true_])
         .on("click", function (event, d) {
-            const new_dot = document.querySelectorAll('.new-dot.selected');
-            if (new_dot.length == 0) {
+            const newDot = document.querySelectorAll('.new-dot.selected');
+            
+            if (newDot.length == 0) {
                 // If no new point is selected: continue with the normal viewing process.
                 d3.selectAll(".dot.selected").classed("selected", false);
                 d3.select(this).classed("selected", true);
-                let filtered_data = get_filter(data);
-                show_signal(d, filtered_data);
+                let filteredData = getFilter(data);
+                getSignal(d, filteredData);
             } else {
                 // If new point is selected: The user can inspect other signals.
                 d3.selectAll(".dot.examine").classed("examine", false);
                 d3.select(this).classed("examine", true);
-                // d3.selectAll('.send-to-container').classed("show", true);
-                examine_signal(d);
+                examineSignal(d);
             }
         });
 
     // Add new points from data_new with gray color
-    const newDots = svg.selectAll(".new-dot").data(data_new, d => d._id);
+    const newDots = scatterSVG.selectAll(".new-dot").data(newData, d => d._id);
     newDots.exit().remove();
-    newDots.attr("cx", d => x(d.x))
-        .attr("cy", d => y(d.y))
-        .style("fill", d => cluster_color[d.pred]);
+    newDots.attr("cx", d => scatterX(d.x))
+        .attr("cy", d => scatterY(d.y))
+        .style("fill", d => classColor[d.pred]);
 
     newDots.enter().append("circle")
         .attr("class", "new-dot dot")
         .attr("r", 3)
-        .attr("cx", d => x(d.x))
-        .attr("cy", d => y(d.y))
+        .attr("cx", d => scatterX(d.x))
+        .attr("cy", d => scatterY(d.y))
         .attr("id", d => "new-dot-" + d._id)
-        .style("fill", d => cluster_color[d.pred])
-        .on("mouseover", function (event, d) {
-            show_tooltip(d);
-        })
-        .on("mouseout", function (event, d) {
-            show_tooltip(null, false);
-        })
+        .style("fill", d => classColor[d.pred])
         .on("click", function (event, d) {
             d3.selectAll(".dot.selected").classed("selected", false);
             d3.selectAll(".dot.examine").classed("examine", false);
 
             d3.select(this).classed("selected", true);
-            let filtered_data = get_filter(data);
-            show_signal(d, filtered_data);
+            let filteredData = getFilter(data);
+            getSignal(d, filteredData);
         });
 
-        // svg.selectAll(".dot")
-        // .on("mouseover", function (event, d) {
-        //     show_tooltip(d);
-        // })
-        // .on("mouseout", function (event, d) {
-        //     show_tooltip(null, false);
-        // })
-        // .on("click", function (event, d) {
-        //     const new_dot = document.querySelectorAll('.new-dot.selected');
-        //     if ((new_dot.length == 0 ) || (d3.select(this).classed('new-dot'))) {
+    scatterSVG.selectAll(".dot")
+        .on("mouseover", function (event, d) {
+            showTooltip(d); // Display Tooltip
+        })
+        .on("mouseout", function (event, d) {
+            showTooltip(null, false); // Hide Tooltip
+        });
 
-        //         // If no new point is selected: continue with the normal viewing process.
-        //         d3.selectAll(".dot.selected").classed("selected", false);
-        //         d3.selectAll(".dot.examine").classed("examine", false);
-        //         d3.select(this).classed("selected", true);
-        //         let filtered_data = get_filter(data);
-        //         show_signal(d, filtered_data);
-        //     } else {
-        //         // If new point is selected: The user can inspect other signals.
-        //         d3.selectAll(".dot.examine").classed("examine", false);
-        //         d3.select(this).classed("examine", true);
-        //         d3.selectAll('.send-to-container').classed("show", true);
-        //         examine_signal(d);
-        //     }
-        // });
-    applyZoomTransform(currentZoomState);
-    updateMinimap(currentZoomState);
+    applyZoomScatter(currentZoomScatter);
+    applyZoomMap(currentZoomScatter);
 
     d3.selectAll(".send-button").on("click", function(event) {
-        var sendTo = d3.select(this).attr("send-to"); // Nearby 1 or 2?
+        // Nearby 1 or 2?
+        var sendTo = d3.select(this).attr("send-to");
         const examineDot = d3.select(".dot.examine")
         const d = examineDot.data()[0]; // Info of examoine point
-
-        const selectedDot = d3.select(".new-dot.selected").data()[0];    // Info of select point
+        const selectedDot = d3.select(".new-dot.selected").data()[0]; // Info of select point
     
         if (d && selectedDot) {
             selectedDot.selected_1 = d._id;
@@ -601,63 +589,11 @@ function update(data, data_new) {
     
             d3.selectAll(".dot." + name).classed("find-" + name, true).classed(name, false)
             examineDot.classed(name, true);
-            update_nearby(selectedDot._id, sendTo, d._id);
+            updateNearby(selectedDot._id, sendTo, d._id);
         } else {
         console.log("No hay un punto examine o new-dot seleccionado.");
         }
     });
-}
-
-var isMiniMapInitialized = false
-function showMiniMap(data, newData) {
-    const dots = minimapG.selectAll(".dot").data(data, d => d._id);
-    dots.exit().remove();
-    dots.attr("cx", d => minimapX(d.x))
-        .attr("cy", d => minimapY(d.y))
-        .style("fill", d => cluster_color[d.cluster]);
-
-    // Add new points
-    dots.enter().append("circle")
-        .attr("class", "dot")
-        .attr("r", 0.8)
-        .attr("cx", d => minimapX(d.x))
-        .attr("cy", d => minimapY(d.y))
-        .style("fill", d => cluster_color[d.cluster])
-
-    // // Add dots to the minimap
-    // minimapG.selectAll(".dot")
-    //     .data(data)
-    //     .enter().append("circle")
-    //     .attr("class", "dot")
-    //     .attr("r", 1)
-    //     .attr("cx", d => minimapX(d.x))
-    //     .attr("cy", d => minimapY(d.y))
-    //     .style("fill", d => cluster_color[d.cluster]);
-
-        // Add dots to the minimap
-    minimapG.selectAll(".new-dot")
-        .data(newData)
-        .enter().append("circle")
-        .attr("class", "new-dot dot")
-        .attr("r", 1.5)
-        .attr("cx", d => minimapX(d.x))
-        .attr("cy", d => minimapY(d.y))
-        .style("fill", "red");
-
-    if (isMiniMapInitialized){
-        console.log('MiniMap is already initialized. Skipping initialization.')
-        return;
-    }
-
-    // Create a rectangle to show the current zoom area
-    const viewRect = minimapG.append("rect")
-        .attr("class", "viewRect")
-        .attr("width", minimapWidth)
-        .attr("height", minimapHeight)
-        .style("fill", "none")
-        .style("stroke", "red");
-
-    isMiniMapInitialized = true
 }
 
 // To load data when index is upload
@@ -671,60 +607,70 @@ function fetchDataAndInitialize() {
     fetch('/get_data')
         .then(response => response.json())
         .then(result => {
-            const data = result.filter(row => row.cluster !== null && row.cluster !== undefined && row.cluster !== '');
-            const data_new = result.filter(row => row.cluster === null || row.cluster === undefined || row.cluster === '');
+            // Split the data with true labels, and new points with only prediction
+            const data = result.filter(row => row.true_ !== null && row.true_ !== undefined && row.true_ !== '');
+            const newData = result.filter(row => row.true_ === null || row.true_ === undefined || row.true_ === '');
 
-            const min_age = d3.min(data, d => d.age);
-            const max_age = d3.max(data, d => d.age);
-            const clusters = [...new Set(data.map(d => d.cluster))];
+            // Get range age and unique classes
+            const minAge = d3.min(data, d => d.age);
+            const maxAge = d3.max(data, d => d.age);
+            const classes = [...new Set(data.map(d => d.true_))];
 
-            const ageSlider = create_sliders(min_age, max_age);
-            create_buttons(clusters);
+            // Create Button Classes and Age Slider
+            const ageSlider = createSliders(minAge, maxAge);
+            createButtons(classes);
 
-            x.domain(d3.extent(data, d => d.x));
-            y.domain(d3.extent(data, d => d.y));
-            minimapX.domain(d3.extent(data, d => d.x));
-            minimapY.domain(d3.extent(data, d => d.y));
+            // Define limits for scatter Plot and Map
+            scatterX.domain(d3.extent(data, d => d.x));
+            scatterY.domain(d3.extent(data, d => d.y));
+            mapX.domain(d3.extent(data, d => d.x));
+            mapY.domain(d3.extent(data, d => d.y));
 
-            update(data, data_new);
-            // showMiniMap(data, data_new);
+            // Initialice the Scatter Plot
+            update(data, newData);
 
-            d3.selectAll(".cluster-button").on("click", function () {
+            // Update if any changes in button classes
+            d3.selectAll(".class-button").on("click", function () {
                 let btn = d3.select(this);
                 // All selected
-                if (this.getAttribute("data-cluster") === "5") {
+                if (this.getAttribute("data-class") === "5") {
                     if (btn.classed("selected")) {
                         // Deselect all buttons
-                        d3.selectAll('.cluster-button').classed("selected", false);
+                        d3.selectAll('.class-button').classed("selected", false);
                         showNotification('Hey there! 👋 Please pick at least one cluster to continue 😊', 'alert');
                     } else {
                         // Select all buttons
-                        d3.selectAll('.cluster-button').classed("selected", true);
+                        d3.selectAll('.class-button').classed("selected", true);
                     }
                 } else {
                     // Change status of button
                     btn.classed("selected", !btn.classed("selected"));
-                    const size = d3.selectAll(".cluster-button:not([data-cluster='5']).selected").size();
-                    if (size < clusters.length) {
+                    const size = d3.selectAll(".class-button:not([data-class='5']).selected").size();
+                    if (size < classes.length) {
                         // Deselect all button
-                        d3.select('.cluster-button[data-cluster="5"]').classed("selected", false);
+                        d3.select('.class-button[data-class="5"]').classed("selected", false);
                     }
-                    if (size === clusters.length) {
+                    if (size === classes.length) {
                         // Select all button
-                        d3.select('.cluster-button[data-cluster="5"]').classed("selected", true);
+                        d3.select('.class-button[data-class="5"]').classed("selected", true);
+                    }
+                    if (size == 0){
+                        showNotification('Hey there! 👋 Please pick at least one cluster to continue 😊', 'alert');
                     }
                 }
-                update(data, data_new);
+                update(data, newData);
             });
 
+            // Update if any changes in selected sex
             d3.selectAll("#gender-icons i").on("click", function () {
                 d3.selectAll("#gender-icons i").classed("selected", false);
                 d3.select(this).classed("selected", true);
-                update(data, data_new);
+                update(data, newData);
             });
 
+            // Update if any changes in age range
             ageSlider.noUiSlider.on('set', function (values, handle) {
-                update(data, data_new);
+                update(data, newData);
             });
         })
         .catch(error => {
