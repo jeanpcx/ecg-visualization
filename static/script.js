@@ -52,7 +52,7 @@ function showMap(data, newData) {
     // Add new points
     dots.enter().append("circle")
         .attr("class", "dot fix")
-        .attr("r", 0.8)
+        .attr("r", 0.6)
         .attr("cx", d => mapX(d.x))
         .attr("cy", d => mapY(d.y))
         .style("fill", d => classColor[d.true_])
@@ -62,7 +62,7 @@ function showMap(data, newData) {
         .data(newData)
         .enter().append("circle")
         .attr("class", "dot new-dot")
-        .attr("r", 1.5)
+        .attr("r", 1)
         .attr("cx", d => mapX(d.x))
         .attr("cy", d => mapY(d.y))
         .style("fill", "red");
@@ -75,7 +75,8 @@ function showMap(data, newData) {
         .attr("width", mapWidth)
         .attr("height", mapHeight)
         .style("fill", "none")
-        .style("stroke", "red");
+        .style("stroke", "red")
+        .style("z-index", 1000);
 
     isMiniMapInitialized = true
 }
@@ -358,7 +359,7 @@ function plotSignal(d, signal, containerId = 0){
         .style("fill", "none")
         .style("pointer-events", "all")
 
-    if (containerId == 0){
+    if (containerId  >= 0){
         signalGroup.call(d3.zoom()
         .scaleExtent([1, 10])
         .translateExtent([[0, 0], [graphWidthSignal, graphHeightSignal]])
@@ -393,9 +394,11 @@ function plotSignal(d, signal, containerId = 0){
     function applyZoomSignal(transform) {
         d3.selectAll(".ecg").each(function () {
             const svg = d3.select(this);
-            signalX.range([0, graphWidthSignal]);
+            // signalX.range([0, graphWidthSignal]);
+            signalY.range([graphHeightSignal, 0]);
+
             const x = transform.rescaleX(signalX);
-            
+        
             svg.select(".x.axis").call(d3.axisBottom(x));
             svg.select(".line").attr("d", d3.line()
                 .x((d, i) => x(i))
@@ -460,7 +463,7 @@ function getSignal(d, filter, renderSelected = true) {
         });
 }
 
-function examineSignal(d){
+function examineSignal(d, content=3){
     fetch('/examine_signal', {
         // Send id of selected point to examine
         method: 'POST',
@@ -469,9 +472,11 @@ function examineSignal(d){
     })
         .then(response => response.json())
         .then(signal => {
-            clearSignalBlock(3);
-            d3.selectAll('#ecg-inspect').classed("show", true);
-            plotSignal(d, signal, 3);
+            clearSignalBlock(content);
+            if(content ==3){
+                d3.selectAll('#ecg-inspect').classed("show", true);
+            }
+            plotSignal(d, signal, content);
         })
         .catch((error) => {
             console.log('Error:', error);
@@ -520,7 +525,7 @@ function update(data, newData) {
     // Add new points
     dots.enter().append("circle")
         .attr("class", "dot fix-dot")
-        .attr("r", 3)
+        .attr("r", 2.5)
         .attr("cx", d => scatterX(d.x))
         .attr("cy", d => scatterY(d.y))
         .attr("id", d => "dot-" + d._id)
@@ -551,7 +556,7 @@ function update(data, newData) {
 
     newDots.enter().append("circle")
         .attr("class", "new-dot dot")
-        .attr("r", 3)
+        .attr("r", 2.5)
         .attr("cx", d => scatterX(d.x))
         .attr("cy", d => scatterY(d.y))
         .attr("id", d => "new-dot-" + d._id)
@@ -562,7 +567,12 @@ function update(data, newData) {
 
             d3.select(this).classed("selected", true);
             let filteredData = getFilter(data);
-            getSignal(d, filteredData);
+
+            if(filteredData.length > 0){
+                getSignal(d, filteredData);
+            }else{
+                examineSignal(d, 0);
+            }
         });
 
     scatterSVG.selectAll(".dot")
